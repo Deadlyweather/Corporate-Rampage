@@ -439,6 +439,8 @@ function LoadingScreen() {
     );
 }
 
+
+
 function ShowUI() {
     Healthbar()
     Money()
