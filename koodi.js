@@ -15,6 +15,40 @@ let Stats = {
     Points: 0
 }
 
+let Debug = {
+
+    Player: {
+        size: 64,
+        world: { x: 0, y: 0 },
+        screen: { x: canvas.width / 2, y: canvas.height / 2}
+    },
+
+    Camera: {
+        world: { x: 0, y: 0 },
+        screen: { x: canvas.width / 2, y: canvas.height / 2 },
+        offset: { x: 0, y: 0, distance: 0, max: Infinity },
+    },
+
+    Cursor: {
+        x: 0,
+        y: 0
+    },
+}
+
+function TrackCursor(canvas) {
+    canvas.addEventListener("mousemove", (event) => {
+        Debug.Cursor.x = event.clientX
+        Debug.Cursor.y = event.clientY
+    })
+
+    canvas.addEventListener("mouseleave", () => {
+        Debug.Cursor.x = null;
+        Debug.Cursor.y = null;
+    });
+}
+
+TrackCursor(canvas)
+
 const paths = {
     // Blueprints
     Lobby: "Kuvat/Blueprints/Lobby.png",
@@ -166,7 +200,7 @@ let UI = {
             size: 40,
 
             x: canvas.width / 1.1,
-            y: canvas.height * 0.2
+            y: canvas.height * 0.3
         },
 
         icon: {
@@ -181,16 +215,43 @@ let UI = {
             color: "white",
             size: 40,
 
-            x: canvas.width / 1.1,
+            x: canvas.width / 1.05,
+            y: canvas.height * 0.1
+        }
+    },
+
+    Points: {
+        text: {
+            font: "Arial",
+            color: "white",
+            size: 40,
+
+            x: canvas.width / 1.05,
             y: canvas.height * 0.2
+        }
+    },
+
+    Debug: {
+
+        Player: {
+            font: "Arial",
+            color: "white",
+            size: 20
         },
 
-        icon: {
-            size: 128,
-            imageName: ""
+        Camera: {
+            font: "Arial",
+            color: "white",
+            size: 40,
+            location: { x: 20, y: 20 }
+        },
+
+        Cursor: {
+            font: "Arial",
+            color: "white",
+            size: 16
         }
     }
-    // debug
 }
 
 let Startup = {
@@ -213,8 +274,6 @@ let Startup = {
         }
     }
 }
-
-// UI (Tony.Ruotsalainen)
 
 function Healthbar() {
     // Bar
@@ -257,6 +316,91 @@ function Money() {
     )
 }
 
+function Floor() {
+    ctx.fillStyle = UI.Floor.text.color
+    ctx.font = `${UI.Floor.text.size}px ${UI.Floor.text.font}`
+    ctx.textAlign = "right"
+
+    ctx.fillText(`Floor: ${Stats.Floor}`,
+        UI.Floor.text.x,
+        UI.Floor.text.y
+    )
+}
+
+function Points() {
+    ctx.fillStyle = UI.Points.text.color
+    ctx.font = `${UI.Points.text.size}px ${UI.Points.text.font}`
+    ctx.textAlign = "right"
+
+    ctx.fillText(`Points: ${Stats.Points}`,
+        UI.Points.text.x,
+        UI.Points.text.y
+    )
+}
+
+function DebugMode() {
+
+    // Cursor
+    ctx.fillStyle = UI.Debug.Cursor.color;
+    ctx.font = `${UI.Debug.Cursor.size}px ${UI.Debug.Cursor.font}`
+    ctx.textAlign = "center"
+
+    if (Debug.Cursor.x && Debug.Cursor.y) {
+        ctx.fillText(`(${Debug.Cursor.x}, ${Debug.Cursor.y})`,
+            Debug.Cursor.x,
+            Debug.Cursor.y + 32
+        );
+    }
+
+    // Player
+    ctx.fillStyle = UI.Debug.Player.color
+    ctx.font = `${UI.Debug.Player.size / 2}px ${UI.Debug.Player.font}`
+    ctx.textAlign = "center"
+
+    ctx.fillText(`( Screen: ${Debug.Player.screen.x}, ${Debug.Player.screen.y} )`,
+        Debug.Player.screen.x,
+        Debug.Player.screen.y + Debug.Player.size
+    )
+
+    ctx.fillStyle = UI.Debug.Player.color
+    ctx.font = `${UI.Debug.Player.size}px ${UI.Debug.Player.font}`
+    ctx.textAlign = "center"
+
+    ctx.fillText(`( World: ${Debug.Player.world.x}, ${Debug.Player.world.y} )`,
+        Debug.Player.screen.x,
+        Debug.Player.screen.y + Debug.Player.size * 1.5
+    )
+
+    // Camera
+    ctx.fillStyle = UI.Debug.Camera.color
+    ctx.font = `${UI.Debug.Camera.size}px ${UI.Debug.Camera.font}`
+    ctx.textAlign = "left"
+
+    ctx.fillText(`( Screen: ${Debug.Camera.screen.x}, ${Debug.Camera.screen.y} )`,
+        UI.Debug.Camera.location.x,
+        UI.Debug.Camera.location.y + UI.Debug.Camera.size
+    )
+
+    ctx.fillStyle = UI.Debug.Camera.color
+    ctx.font = `${UI.Debug.Camera.size}px ${UI.Debug.Camera.font}`
+    ctx.textAlign = "left"
+
+    ctx.fillText(`( World: ${Debug.Camera.world.x}, ${Debug.Camera.world.y} )`,
+        UI.Debug.Camera.location.x,
+        UI.Debug.Camera.location.y + UI.Debug.Camera.size * 2.5
+    )
+
+    ctx.fillStyle = UI.Debug.Camera.color
+    ctx.font = `${UI.Debug.Camera.size}px ${UI.Debug.Camera.font}`
+    ctx.textAlign = "left"
+
+    ctx.fillText(`( Offset: ${Debug.Camera.offset.x}, ${Debug.Camera.offset.y}  Distance : ( ${Debug.Camera.offset.distance} / ${Debug.Camera.offset.max} ) )`,
+        UI.Debug.Camera.location.x,
+        UI.Debug.Camera.location.y + UI.Debug.Camera.size * 4
+    )
+}
+
+
 function LoadingScreen() {
     DownloadImages(
         (progress) => {
@@ -289,7 +433,7 @@ function LoadingScreen() {
             ctx.fillText(`${Startup.Progress}%`, Startup.Progressbar.fluid.x, Startup.Progressbar.fluid.y);
         },
         () => {
-            console.log("Kaikki kuvat ladattu!");
+            console.log("Kaikki kuvat ladattu");
             gameloop()
         }
     );
@@ -298,6 +442,8 @@ function LoadingScreen() {
 function ShowUI() {
     Healthbar()
     Money()
+    Floor()
+    Points()
 }
 
 LoadingScreen()
@@ -309,4 +455,8 @@ function gameloop() {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     ShowUI()
+
+    requestAnimationFrame(gameloop)
 }
+
+// UI (Tony Ruotsalainen)
