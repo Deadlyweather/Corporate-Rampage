@@ -51,7 +51,6 @@ TrackCursor(canvas)
 
 const paths = {
     // Blueprints
-    Lobby: "Kuvat/Blueprints/Lobby.png",
 
     // Collectables
     BigMoney: "Kuvat/Collectables/BigMoney.png",
@@ -72,6 +71,7 @@ const paths = {
     Employee: "Kuvat/Entities/Employee.png",
     Guard: "Kuvat/Entities/Guard.png",
     Player: "Kuvat/Entities/Player.png",
+    Manager: "Kuvat/Entities/Manager.png",
 
     // Equipment
     BatonSword: "Kuvat/Equipment/BatonSword.png",
@@ -105,8 +105,8 @@ const paths = {
     DoorKnob: "Kuvat/Special/DoorKnob.png",
     Locked: "Kuvat/Special/Locked.png",
     OfficeDoorKnob: "Kuvat/Special/OfficeDoorKnob.png",
-    StairsDown: "Kuvat/Special/StairsDown.png",
-    StairsUp: "Kuvat/Special/StairsUp.png",
+    StairsSurface: "Kuvat/Special/Exit.png",
+    StairsDeep: "Kuvat/Special/Exit2.png",
     Unlocked: "Kuvat/Special/Unlocked.png",
 
     // Stats
