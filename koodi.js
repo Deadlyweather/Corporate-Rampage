@@ -15,26 +15,6 @@ let Stats = {
     Points: 0
 }
 
-let Debug = {
-
-    Player: {
-        size: 64,
-        world: { x: 0, y: 0 },
-        screen: { x: canvas.width / 2, y: canvas.height / 2}
-    },
-
-    Camera: {
-        world: { x: 0, y: 0 },
-        screen: { x: canvas.width / 2, y: canvas.height / 2 },
-        offset: { x: 0, y: 0, distance: 0, max: Infinity },
-    },
-
-    Cursor: {
-        x: 0,
-        y: 0
-    },
-}
-
 function TrackCursor(canvas) {
     canvas.addEventListener("mousemove", (event) => {
         Debug.Cursor.x = event.clientX
@@ -205,7 +185,7 @@ let UI = {
 
         icon: {
             size: 128,
-            imageName: "Money"
+            image: "Money"
         }
     },
 
@@ -308,7 +288,7 @@ function Money() {
         UI.Money.text.y)
 
     ctx.drawImage(
-        images[UI.Money.icon.imageName] || createPlaceholder(UI.Money.icon.size),
+        images[UI.Money.icon.image] || createPlaceholder(UI.Money.icon.size),
         UI.Money.text.x,
         UI.Money.text.y - UI.Money.icon.size / 2,
         UI.Money.icon.size,
@@ -359,16 +339,16 @@ function DebugMode() {
 
     ctx.fillText(`( Screen: ${Debug.Player.screen.x}, ${Debug.Player.screen.y} )`,
         Debug.Player.screen.x,
-        Debug.Player.screen.y + Debug.Player.size
+        Debug.Player.screen.y + Player.size
     )
 
     ctx.fillStyle = UI.Debug.Player.color
     ctx.font = `${UI.Debug.Player.size}px ${UI.Debug.Player.font}`
     ctx.textAlign = "center"
 
-    ctx.fillText(`( World: ${Debug.Player.world.x}, ${Debug.Player.world.y} )`,
+    ctx.fillText(`( World: ${Player.position.x}, ${Player.position.y} )`,
         Debug.Player.screen.x,
-        Debug.Player.screen.y + Debug.Player.size * 1.5
+        Debug.Player.screen.y + Player.size * 1.5
     )
 
     // Camera
@@ -394,14 +374,14 @@ function DebugMode() {
     ctx.font = `${UI.Debug.Camera.size}px ${UI.Debug.Camera.font}`
     ctx.textAlign = "left"
 
-    ctx.fillText(`( Offset: ${Debug.Camera.offset.x}, ${Debug.Camera.offset.y}  Distance : ( ${Debug.Camera.offset.distance} / ${Debug.Camera.offset.max} ) )`,
+    ctx.fillText(`( Offset: ${Debug.Camera.offset.x}, ${Debug.Camera.offset.y} )    ( Distance : ${Debug.Camera.offset.distance} / ${Debug.Camera.offset.max} )`,
         UI.Debug.Camera.location.x,
         UI.Debug.Camera.location.y + UI.Debug.Camera.size * 4
     )
 }
 
-
 function LoadingScreen() {
+
     DownloadImages(
         (progress) => {
             Startup.Progress = progress;
@@ -439,7 +419,120 @@ function LoadingScreen() {
     );
 }
 
+let Player = {
 
+    image: "Player",
+
+    position: { x: 0, y: 0 },
+    velocity: { x: 0, y: 0 },
+    movement: { x: 0, y: 0 },
+
+    size: 128,
+    weight: 100,
+
+    Strenght: 1,
+    Endurance: 1,
+    Agility: 1,
+    Level: 1,
+
+    Experience: {Count: 0, Max: 5, Scaling: 1}
+}
+
+let Blocks = {}
+
+let Debug = {
+
+    Player: {
+        screen: { x: canvas.width / 2, y: canvas.height / 2},
+        rotation: 90
+    },
+
+    Camera: {
+        world: { x: 0, y: 0 },
+        screen: { x: canvas.width / 2, y: canvas.height / 2 },
+        offset: { x: 0, y: 0, distance: 0, max: Infinity },
+    },
+
+    Cursor: {
+        x: 0,
+        y: 0
+    },
+}
+
+let input = {
+    leftclick: false,
+    rightclick: false,
+    left: false,
+    right: false,
+    up: false,
+    down: false,
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "w") input.up = true;
+    if (e.key === "a") input.left = true;
+    if (e.key === "s") input.down = true;
+    if (e.key === "d") input.right = true;
+});
+
+document.addEventListener("keyup", (e) => {
+    if (e.key === "w") input.up = false;
+    if (e.key === "a") input.left = false;
+    if (e.key === "s") input.down = false;
+    if (e.key === "d") input.right = false;
+});
+
+function MovePlayer() {
+
+    Player.movement.x = 0
+    Player.movement.y = 0
+
+    if (input.up) Player.movement.y -= Player.Agility
+    if (input.left) Player.movement.x -= Player.Agility
+    if (input.down) Player.movement.y += Player.Agility
+    if (input.right) Player.movement.x += Player.Agility
+    
+    
+
+    Player.velocity.x += Player.movement.x
+    Player.velocity.y += Player.movement.y
+
+    Player.velocity.x *= (10 / Player.weight)
+    Player.velocity.y *= (10 / Player.weight)
+
+    Player.position.x += Player.velocity.x
+    Player.position.y += Player.velocity.y
+    
+}
+
+function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End = { x: Debug.Cursor.x, y: Debug.Cursor.y } ) {
+
+    const dx = End.x - Start.x
+    const dy = End.y - Start.y
+
+    if (Debug.Cursor.x && Debug.Cursor.y) {
+        Player.rotation = Math.atan2(dy, dx)
+    }
+    
+
+    ctx.save();
+
+    ctx.translate(Start.x, Start.y)
+    ctx.rotate(Player.rotation + Math.PI / 2)
+
+    ctx.shadowColor = "white"
+    ctx.shadowBlur = 80
+
+    ctx.drawImage(images[Player.image],
+        - Player.size / 2,
+        - Player.size / 2,
+        Player.size,
+        Player.size
+    )
+    
+    ctx.restore()
+
+}
 
 function ShowUI() {
     Healthbar()
@@ -450,12 +543,30 @@ function ShowUI() {
 
 LoadingScreen()
 
+DebugEnabled = false
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "p") {
+        if (DebugEnabled) {
+            DebugEnabled = false
+        } else {
+            DebugEnabled = true
+        }
+    }
+})
+
 function gameloop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    if (DebugEnabled) {
+        DebugMode()
+    }
+
+    MovePlayer()
+    DrawPlayer()
     ShowUI()
 
     requestAnimationFrame(gameloop)
