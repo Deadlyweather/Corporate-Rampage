@@ -74,7 +74,7 @@ const paths = {
     ZeusLightning: "Kuvat/Equipment/ZeusLightning.png",
 
     // Floors
-    FloorMat: "Kuvat/Floors/FloorMat.png",
+    FloorMat: "Kuvat/Floors/FloorCarpet.png",
     FloorTile: "Kuvat/Floors/FloorTile.png",
 
     // Materials
@@ -93,7 +93,7 @@ const paths = {
     Agility: "Kuvat/Stats/Agility.png",
     Endurance: "Kuvat/Stats/Endurance.png",
     Level: "Kuvat/Stats/Level.png",
-    Strenght: "Kuvat/Stats/Strenght.png",
+    Strength: "Kuvat/Stats/Strength.png",
 
     // Walls
     BasicWall: "Kuvat/Walls/BasicWall.png"
@@ -387,8 +387,9 @@ function LoadingScreen() {
             Startup.Progress = progress;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height)
-            ctx.fillStyle = "black",
+            ctx.fillStyle = "black"
             ctx.fillRect(0, 0, canvas.width, canvas.height)
+
             ctx.strokeStyle = "white";
             ctx.lineWidth = 5;
             ctx.strokeRect(
@@ -414,7 +415,9 @@ function LoadingScreen() {
         },
         () => {
             console.log("Kaikki kuvat ladattu");
-            gameloop()
+
+            PrepareFloor();
+            gameloop();
         }
     );
 }
@@ -427,10 +430,11 @@ let Player = {
     velocity: { x: 0, y: 0 },
     movement: { x: 0, y: 0 },
 
+    rotation: 0,
     size: 128,
     weight: 100,
 
-    Strenght: 1,
+    Strength: 1,
     Endurance: 1,
     Agility: 1,
     Level: 1,
@@ -438,7 +442,119 @@ let Player = {
     Experience: {Count: 0, Max: 5, Scaling: 1}
 }
 
-let Blocks = {}
+let World = {
+    TileSize: 64,
+    Size: 0
+}
+
+let Structures = {
+
+    Tiles: [],
+
+    Types: {
+        BasicWall: {
+            image: "BasicWall",
+            size: 1,
+            solid: true,
+            draggable: false,
+            id: 0
+        },
+        BasicFloor: {
+            image: "FloorTile",
+            size: 1,
+            solid: false,
+            draggable: false,
+            id: 1
+        },
+        
+    }
+}
+
+let layout = []
+
+function RandomGenerator(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function PrepareFloor(Blueprint) {
+
+    layout = [];
+
+    if (!Blueprint) {
+
+        World.Size = RandomGenerator(50, 100);
+
+        for (let y = 0; y < World.Size; y++) {
+
+            layout[y] = [];
+
+            for (let x = 0; x < World.Size; x++) {
+
+                if (x === 0 || y === 0 || x === World.Size - 1 || y === World.Size - 1) {
+                    layout[y][x] = 0;
+                } else {
+                    layout[y][x] = 1;
+                }
+            }
+        }
+
+    } else {
+
+    }
+    BuildFloor()
+}
+
+function BuildFloor() {
+    Structures.Tiles = [];
+
+    for (let y = 0; y < World.Size; y++) {
+        for (let x = 0; x < World.Size; x++) {
+            const typeId = layout[y][x];
+            let typeKey = null;
+
+            for (const key in Structures.Types) {
+                if (Structures.Types[key].id === typeId) {
+                    typeKey = key;
+                    break;
+                }
+            }
+
+            if (typeKey) {
+                Structures.Tiles.push({
+                    type: typeKey,
+                    x: x,
+                    y: y,
+                    worldX: x * World.TileSize,
+                    worldY: y * World.TileSize
+                });
+            }
+        }
+    }
+    console.log(`Lattia rakennettu: ${Structures.Tiles.length} ruutua`);
+}
+
+function DrawStructures() {
+    for (let tile of Structures.Tiles) {
+        const type = Structures.Types[tile.type];
+        
+        const screenX = tile.worldX - Debug.Camera.world.x + Debug.Camera.screen.x;
+        const screenY = tile.worldY - Debug.Camera.world.y + Debug.Camera.screen.y;
+        
+        if (screenX > -World.TileSize && screenX < canvas.width &&
+            screenY > -World.TileSize && screenY < canvas.height) {
+            
+            if (images[type.image]) {
+                ctx.drawImage(
+                    images[type.image],
+                    screenX,
+                    screenY,
+                    World.TileSize,
+                    World.TileSize
+                );
+            }
+        }
+    }
+}
 
 let Debug = {
 
@@ -457,6 +573,7 @@ let Debug = {
         x: 0,
         y: 0
     },
+
 }
 
 let input = {
@@ -491,14 +608,12 @@ function MovePlayer() {
     if (input.left) Player.movement.x -= Player.Agility
     if (input.down) Player.movement.y += Player.Agility
     if (input.right) Player.movement.x += Player.Agility
-    
-    
 
     Player.velocity.x += Player.movement.x
     Player.velocity.y += Player.movement.y
 
-    Player.velocity.x *= (10 / Player.weight)
-    Player.velocity.y *= (10 / Player.weight)
+    Player.velocity.x *= Math.max(0.5, 1 - Player.weight / 1000)
+    Player.velocity.y *= Math.max(0.5, 1 - Player.weight / 1000)
 
     Player.position.x += Player.velocity.x
     Player.position.y += Player.velocity.y
@@ -534,6 +649,11 @@ function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End 
 
 }
 
+function TrackPlayer() {
+    Debug.Camera.world.x = Player.position.x;
+    Debug.Camera.world.y = Player.position.y;
+}
+
 function ShowUI() {
     Healthbar()
     Money()
@@ -542,6 +662,8 @@ function ShowUI() {
 }
 
 LoadingScreen()
+
+PrepareFloor()
 
 DebugEnabled = false
 
@@ -561,12 +683,16 @@ function gameloop() {
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    TrackPlayer()
+    MovePlayer()
+    
+    DrawStructures()
+    DrawPlayer()
+
     if (DebugEnabled) {
         DebugMode()
     }
 
-    MovePlayer()
-    DrawPlayer()
     ShowUI()
 
     requestAnimationFrame(gameloop)
