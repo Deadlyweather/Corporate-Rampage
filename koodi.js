@@ -378,6 +378,46 @@ function DebugMode() {
         UI.Debug.Camera.location.x,
         UI.Debug.Camera.location.y + UI.Debug.Camera.size * 4
     )
+
+    // --- Hitboxes ---
+
+    // Player
+    ctx.save()
+    ctx.strokeStyle = "blue"
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(Debug.Player.screen.x, Debug.Player.screen.y, Player.size * Player.hitbox.size, 0, Player.hitbox.angle * 4)
+    ctx.stroke()
+    ctx.restore()
+
+    // Structures
+    for (let tile of Structures.Tiles) {
+        if (!tile.hitbox) continue;
+
+        const screenX = tile.hitbox.x - Debug.Camera.world.x + Debug.Camera.screen.x;
+        const screenY = tile.hitbox.y - Debug.Camera.world.y + Debug.Camera.screen.y;
+
+        ctx.save();
+        ctx.globalAlpha = 0.5
+        ctx.lineWidth = 1;
+
+        ctx.strokeStyle = tile.hitbox.solid ? "blue" : "red";
+
+        if (tile.hitbox.type === "rect") {
+            ctx.strokeRect(
+                screenX - tile.hitbox.width / 2,
+                screenY - tile.hitbox.height / 2,
+                tile.hitbox.width,
+                tile.hitbox.height
+            );
+        } else if (tile.hitbox.type === "circle") {
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, tile.hitbox.radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
 }
 
 function LoadingScreen() {
@@ -433,6 +473,7 @@ let Player = {
     rotation: 0,
     size: 128,
     weight: 100,
+    hitbox: { size: 0.25, angle: Math.PI / 2 },
 
     Strength: 1,
     Endurance: 1,
@@ -457,17 +498,29 @@ let Structures = {
             size: 1,
             solid: true,
             draggable: false,
-            id: 0
+            layer: 2,
+            id: 0,
+            onCollision(self, other) {
+
+                
+            }
         },
         BasicFloor: {
             image: "FloorTile",
             size: 1,
             solid: false,
             draggable: false,
+            layer: 0,
             id: 1
-        },
-        
+        }
     }
+}
+
+let Layers = {
+    Void: -1,
+    Floor: 0,
+    Objects: 1,
+    Walls: 2
 }
 
 let layout = []
@@ -520,21 +573,48 @@ function BuildFloor() {
             }
 
             if (typeKey) {
-                Structures.Tiles.push({
+                const tile = {
                     type: typeKey,
                     x: x,
                     y: y,
                     worldX: x * World.TileSize,
-                    worldY: y * World.TileSize
-                });
+                    worldY: y * World.TileSize,
+                    layer: Structures.Types[typeKey].layer
+                };
+
+                const type = Structures.Types[typeKey];
+
+                if (type.solid) {
+                    tile.hitbox = {
+                        type: "rect",
+                        x: tile.worldX + World.TileSize / 2,
+                        y: tile.worldY + World.TileSize / 2,
+                        width: World.TileSize,
+                        height: World.TileSize,
+                        solid: true
+                    };
+                } else {
+                    tile.hitbox = {
+                        type: "rect",
+                        x: tile.worldX + World.TileSize / 2,
+                        y: tile.worldY + World.TileSize / 2,
+                        width: World.TileSize,
+                        height: World.TileSize,
+                        solid: false
+                    };
+                }
+
+                Structures.Tiles.push(tile);
             }
         }
     }
     console.log(`Lattia rakennettu: ${Structures.Tiles.length} ruutua`);
 }
 
-function DrawStructures() {
+function DrawStructures(layer) {
     for (let tile of Structures.Tiles) {
+        if (tile.layer !== layer) continue;
+
         const type = Structures.Types[tile.type];
         
         const screenX = tile.worldX - Debug.Camera.world.x + Debug.Camera.screen.x;
@@ -573,6 +653,18 @@ let Debug = {
         x: 0,
         y: 0
     },
+}
+
+function TrackPlayerHitbox() {
+    return {
+        x: Player.position.x,
+        y: Player.position.y,
+        radius: Player.size * Player.hitbox.size,
+        angle: Player.hitbox.angle
+    }
+}
+
+function Collision(Target1, Target2) {
 
 }
 
@@ -583,6 +675,25 @@ let input = {
     right: false,
     up: false,
     down: false,
+}
+
+function getTileAtWorld(x, y) {
+    const tileX = Math.floor(x / World.TileSize);
+    const tileY = Math.floor(y / World.TileSize);
+
+    if (tileX < 0 || tileY < 0 || tileX >= World.Size || tileY >= World.Size) {
+        return null;
+    }
+
+    return layout[tileY][tileX] ?? null;
+}
+
+function Void() {
+    const tile = getTileAtWorld(Player.position.x, Player.position.y);
+
+    if (tile === null) {
+        console.log("u r ded");
+    }
 }
 
 document.addEventListener("keydown", (e) => {
@@ -620,6 +731,8 @@ function MovePlayer() {
     
 }
 
+
+
 function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End = { x: Debug.Cursor.x, y: Debug.Cursor.y } ) {
 
     const dx = End.x - Start.x
@@ -628,7 +741,6 @@ function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End 
     if (Debug.Cursor.x && Debug.Cursor.y) {
         Player.rotation = Math.atan2(dy, dx)
     }
-    
 
     ctx.save();
 
@@ -684,9 +796,13 @@ function gameloop() {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     TrackPlayer()
+    Void()
     MovePlayer()
     
-    DrawStructures()
+    for (let layerKey in Layers) {
+        DrawStructures(Layers[layerKey]);
+    }
+    
     DrawPlayer()
 
     if (DebugEnabled) {
@@ -699,3 +815,4 @@ function gameloop() {
 }
 
 // UI (Tony Ruotsalainen)
+// Rakennus (Tony Ruotsalainen)
