@@ -500,10 +500,6 @@ let Structures = {
             draggable: false,
             layer: 2,
             id: 0,
-            onCollision(self, other) {
-
-                
-            }
         },
         BasicFloor: {
             image: "FloorTile",
@@ -556,6 +552,8 @@ function PrepareFloor(Blueprint) {
     }
     BuildFloor()
 }
+
+
 
 function BuildFloor() {
     Structures.Tiles = [];
@@ -657,6 +655,7 @@ let Debug = {
 
 function TrackPlayerHitbox() {
     return {
+        type: "circle",
         x: Player.position.x,
         y: Player.position.y,
         radius: Player.size * Player.hitbox.size,
@@ -664,9 +663,98 @@ function TrackPlayerHitbox() {
     }
 }
 
+function collideCircleCircle(TargetA,TargetB){
+
+    const dx = TargetA.x - TargetB.x;
+    const dy = TargetA.y - TargetB.y;
+    const radius = TargetA.radius + TargetB.radius;
+
+    return dx*dx + dy*dy <= radius*radius;
+}
+
+function collideRectRect(TargetA,TargetB){
+
+    return Math.abs(TargetA.x-TargetB.x)*2 < (TargetA.width+TargetB.width) &&
+           Math.abs(TargetA.y-TargetB.y)*2 < (TargetA.height+TargetB.height);
+}
+
+function collideCircleRect(circle,rect){
+
+    const closestX = Math.max(
+        rect.x - rect.width/2,
+        Math.min(circle.x, rect.x + rect.width/2)
+    );
+
+    const closestY = Math.max(
+        rect.y - rect.height/2,
+        Math.min(circle.y, rect.y + rect.height/2)
+    );
+
+    const dx = circle.x - closestX;
+    const dy = circle.y - closestY;
+
+    return dx*dx + dy*dy <= circle.radius*circle.radius;
+}
+
 function Collision(Target1, Target2) {
 
+    if(!Target1 || !Target2) return false;
+
+    if(Target1.type==="circle" && Target2.type==="circle")
+        return collideCircleCircle(Target1,Target2);
+
+    if(Target1.type==="rect" && Target2.type==="rect")
+        return collideRectRect(Target1,Target2);
+
+    if(Target1.type==="circle" && Target2.type==="rect")
+        return collideCircleRect(Target1,Target2);
+
+    if(Target1.type==="rect" && Target2.type==="circle")
+        return collideCircleRect(Target2,Target1);
+
+    return false;
 }
+
+function Effect() {
+    const playerHitbox = TrackPlayerHitbox();
+
+    for (let tile of Structures.Tiles) {
+        if (!tile.hitbox) continue;
+
+        if (Collision(playerHitbox, tile.hitbox)) {
+            const type = Structures.Types[tile.type];
+
+            if (type.onCollision) {
+                type.onCollision(tile, Player);
+            }
+
+            if (type.solid) {
+                const DistanceX = Player.position.x - tile.hitbox.x;
+                const DistanceY = Player.position.y - tile.hitbox.y;
+
+                const overlapX = playerHitbox.radius + tile.hitbox.width / 2 - Math.abs(DistanceX);
+                const overlapY = playerHitbox.radius + tile.hitbox.height / 2 - Math.abs(DistanceY);
+
+                if (overlapX > 0 && overlapY > 0) {
+                    if (overlapX < overlapY) {
+                        Player.position.x += DistanceX > 0 ? overlapX : -overlapX;
+                        Player.velocity.x *= -1; 
+                    } else {
+                        Player.position.y += DistanceY > 0 ? overlapY : -overlapY;
+                        Player.velocity.y = -1; 
+                    }
+                }
+            }
+        }
+    }
+}
+
+function TeleportPlayer(x, y) {
+    Player.position.x = x
+    Player.position.y = y
+}
+
+
 
 let input = {
     leftclick: false,
@@ -689,10 +777,24 @@ function getTileAtWorld(x, y) {
 }
 
 function Void() {
-    const tile = getTileAtWorld(Player.position.x, Player.position.y);
+    const playerHitbox = TrackPlayerHitbox();
+    let isColliding = false;
 
-    if (tile === null) {
-        console.log("u r ded");
+    for (let tile of Structures.Tiles) {
+        if (!tile.hitbox || !tile.hitbox.solid) continue;
+
+        if (Collision(playerHitbox, tile.hitbox)) {
+            isColliding = true;
+            break;
+        }
+    }
+
+    if (!isColliding) {
+        const tile = getTileAtWorld(Player.position.x, Player.position.y);
+
+        if (tile === null) {
+            console.log("u r ded");
+        }
     }
 }
 
@@ -796,6 +898,7 @@ function gameloop() {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     TrackPlayer()
+    Effect()
     Void()
     MovePlayer()
     
