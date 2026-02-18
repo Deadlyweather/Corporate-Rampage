@@ -1,6 +1,11 @@
-const music = new audio("audio/music_loop.ogg");
+const music = new Audio("audio/music_loop.ogg");
 music.loop = true;
 music.volume = 0.5;
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "o") music.play();
+})
+
 let canvas = document.getElementById("canvas")
 let ctx = canvas.getContext("2d")
 
@@ -922,3 +927,4 @@ function gameloop() {
 
 // UI (Tony Ruotsalainen)
 // Rakennus (Tony Ruotsalainen)
+// Musiikki (Paajanen Jesse)
