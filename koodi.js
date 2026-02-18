@@ -1,5 +1,4 @@
-const music = new audio("audio/
-music_loop.ogg");
+const music = new audio("audio/music_loop.ogg");
 music.loop = true;
 music.volume = 0.5;
 let canvas = document.getElementById("canvas")
