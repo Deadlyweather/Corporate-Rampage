@@ -358,6 +358,22 @@ function DebugMode() {
         Debug.Player.screen.x,
         Debug.Player.screen.y + Player.size * 1.5
     )
+    let Enemies = []
+
+function SpawnEnemy(x, y) {
+    Enemies.push({
+        image: "Employee",
+        position: { x: x, y: y },
+        velocity: { x: 0, y: 0 },
+        size: 96,
+        speed: 1.5,
+        health: 20,
+        aggroRange: 600,
+        hitbox: { type: "circle", radius: 96 * 0.3 },
+        lastHit: 0
+    })
+}
+
 
     // Camera
     ctx.fillStyle = UI.Debug.Camera.color
