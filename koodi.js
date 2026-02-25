@@ -631,6 +631,13 @@ function BuildFloor() {
         }
     }
     console.log(`Lattia rakennettu: ${Structures.Tiles.length} ruutua`);
+    Enemies = []
+
+for (let i = 0; i < 10; i++) {
+    SpawnEnemy(
+        RandomGenerator(200, World.Size * World.TileSize - 200),
+        RandomGenerator(200, World.Size * World.TileSize - 200)
+    )
 }
 
 function DrawStructures(layer) {
