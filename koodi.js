@@ -936,9 +936,53 @@ function gameloop() {
     for (let layerKey in Layers) {
         DrawStructures(Layers[layerKey]);
     }
-    
-    DrawPlayer()
+    function UpdateEnemies() {
+    for (let enemy of Enemies) {
+        const dx = Player.position.x - enemy.position.x
+        const dy = Player.position.y - enemy.position.y
+        const distance = Math.hypot(dx, dy)
 
+        if (distance < enemy.aggroRange) { // seuraa pelaajaa
+            const dirX = dx / distance
+            const dirY = dy / distance
+
+            enemy.velocity.x += dirX * enemy.speed
+            enemy.velocity.y += dirY * enemy.speed
+        }
+
+        // hidastetaan liike hiukan
+        enemy.velocity.x *= 0.9
+        enemy.velocity.y *= 0.9
+
+        enemy.position.x += enemy.velocity.x
+        enemy.position.y += enemy.velocity.y
+    }
+}
+
+function EnemyCombat() {
+    const playerHitbox = TrackPlayerHitbox()
+    for (let enemy of Enemies) {
+        const enemyHitbox = {
+            type: "circle",
+            x: enemy.position.x,
+            y: enemy.position.y,
+            radius: enemy.hitbox.radius
+        }
+
+        if (Collision(playerHitbox, enemyHitbox)) {
+            const now = Date.now()
+            if (!enemy.lastHit) enemy.lastHit = 0
+
+            if (now - enemy.lastHit > 800) {
+                Stats.Health -= 10
+                enemy.lastHit = now
+            }
+        }
+    }
+}
+    Drawenemies()
+    DrawPlayer()
+    
     if (DebugEnabled) {
         DebugMode()
     }
