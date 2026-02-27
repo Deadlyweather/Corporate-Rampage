@@ -22,6 +22,68 @@ let Stats = {
     Floor: 0,
     Points: 0
 }
+let Inventory = {
+    size: 12,
+    slots: [],
+
+    init() {
+        this.slots = new Array(this.size).fill(null);
+    },
+
+    add(item, amount = 1) {
+
+        
+        if (item.stackable) {
+            for (let i = 0; i < this.size; i++) {
+                let slot = this.slots[i];
+                if (slot && slot.item.id === item.id) {
+                    slot.amount += amount;
+                    return true;
+                }
+            }
+        }
+
+        
+        for (let i = 0; i < this.size; i++) {
+            if (!this.slots[i]) {
+                this.slots[i] = { item, amount };
+                return true;
+            }
+        }
+
+        return false; 
+    },
+
+    remove(itemId, amount = 1) {
+        for (let i = 0; i < this.size; i++) {
+            let slot = this.slots[i];
+            if (slot && slot.item.id === itemId) {
+                slot.amount -= amount;
+
+                if (slot.amount <= 0) {
+                    this.slots[i] = null;
+                }
+                return true;
+            }
+        }
+        return false;
+    },
+
+    has(itemId, amount = 1) {
+        for (let slot of this.slots) {
+            if (slot && slot.item.id === itemId && slot.amount >= amount) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    clear() {
+        this.slots = new Array(this.size).fill(null);
+    }
+};
+
+Inventory.init();
 
 function TrackCursor(canvas) {
     canvas.addEventListener("mousemove", (event) => {
