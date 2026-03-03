@@ -611,10 +611,37 @@ let Layers = {
 }
 
 let layout = []
+let WorldItems = [];
+
+const Items = {
+    Money: {
+        id: 1,
+        image: "Money",
+        stackable: true
+    },
+    Coffee: {
+        id: 2,
+        image: "Coffee",
+        stackable: true
+    }
+};
 
 function RandomGenerator(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
+    function SpawnItem(x, y, itemData) {
+    WorldItems.push({
+        position: { x, y },
+        size: 64,
+        item: itemData,
+        hitbox: {
+            type: "circle",
+            x: x,
+            y: y,
+            radius: 32
+        }
+    });
 }
+
 
 function PrepareFloor(Blueprint) {
 
@@ -702,6 +729,14 @@ function BuildFloor() {
 
 for (let i = 0; i < 10; i++) {
     SpawnEnemy(
+        for (let i = 0; i < 5; i++) {
+    SpawnItem(
+        RandomGenerator(300, World.Size * World.TileSize - 300),
+        RandomGenerator(300, World.Size * World.TileSize - 300),
+        Items.Money
+    );
+}
+
         RandomGenerator(200, World.Size * World.TileSize - 200),
         RandomGenerator(200, World.Size * World.TileSize - 200)
     )
@@ -875,6 +910,22 @@ function getTileAtWorld(x, y) {
 }
 
 function Void() {
+    function PickupCheck() {
+    const playerHitbox = TrackPlayerHitbox();
+
+    for (let i = WorldItems.length - 1; i >= 0; i--) {
+
+        if (Collision(playerHitbox, WorldItems[i].hitbox)) {
+
+            const added = Inventory.add(WorldItems[i].item, 1);
+
+            if (added) {
+                WorldItems.splice(i, 1);
+            }
+        }
+    }
+}
+
     const playerHitbox = TrackPlayerHitbox();
     let isColliding = false;
 
@@ -935,6 +986,21 @@ function MovePlayer() {
 }
 
 
+function DrawWorldItems() {
+    for (let worldItem of WorldItems) {
+
+        const screenX = worldItem.position.x - Debug.Camera.world.x + Debug.Camera.screen.x;
+        const screenY = worldItem.position.y - Debug.Camera.world.y + Debug.Camera.screen.y;
+
+        ctx.drawImage(
+            images[worldItem.item.image] || createPlaceholder(64),
+            screenX - worldItem.size / 2,
+            screenY - worldItem.size / 2,
+            worldItem.size,
+            worldItem.size
+        );
+    }
+}
 
 function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End = { x: Debug.Cursor.x, y: Debug.Cursor.y } ) {
 
@@ -1050,6 +1116,7 @@ function EnemyCombat() {
         }
     }
 }
+    DrawWorldItems();
     Drawenemies()
     DrawPlayer()
     
@@ -1080,6 +1147,7 @@ function DrawInventory() {
 }
 
    
+PickupCheck();
 
     requestAnimationFrame(gameloop)
 }
