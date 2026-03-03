@@ -1056,8 +1056,30 @@ function EnemyCombat() {
     if (DebugEnabled) {
         DebugMode()
     }
+function DrawInventory() {
+    const size = 64 
+    const padding = 10
+    const startX = canvas.width / 2 - (size * Player.Inventory.maxSlots) / 2
+    const startY = canvas.height - 150
 
-    ShowUI()
+    
+    ctx.fillStyle = "rgba(0,0,0,0.7)"
+    ctx.fillRect(startX - padding, startY - padding, size * Player.Inventory.maxSlots + padding * 2, size + padding * 2)
+
+    
+    for (let i = 0; i < Player.Inventory.maxSlots; i++) {
+        const slot = Player.Inventory.items[i]
+        ctx.strokeStyle = "white"
+        ctx.strokeRect(startX + i * size, startY, size, size)
+
+        if (slot) {
+            const img = images[slot.item.image] || createPlaceholder(size)
+            ctx.drawImage(img, startX + i * size, startY, size, size)
+        }
+    }
+}
+
+   
 
     requestAnimationFrame(gameloop)
 }
