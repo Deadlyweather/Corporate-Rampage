@@ -566,7 +566,12 @@ let Player = {
     Agility: 1,
     Level: 1,
 
-    Experience: {Count: 0, Max: 5, Scaling: 1}
+    Experience: {Count: 0, Max: 5, Scaling: 1},
+    Inventory: {
+    items: [],
+    maxSlots: 12,
+    open: false
+
 }
 
 let World = {
@@ -896,6 +901,9 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "a") input.left = true;
     if (e.key === "s") input.down = true;
     if (e.key === "d") input.right = true;
+    if (e.key === "i") {
+    Player.Inventory.open = !Player.Inventory.open
+    }
 });
 
 document.addEventListener("keyup", (e) => {
