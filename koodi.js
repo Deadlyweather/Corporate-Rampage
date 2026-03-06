@@ -31,6 +31,68 @@ let Stats = {
     Floor: -1,
     Points: 0
 }
+let Inventory = {
+    size: 12,
+    slots: [],
+
+    init() {
+        this.slots = new Array(this.size).fill(null);
+    },
+
+    add(item, amount = 1) {
+
+        
+        if (item.stackable) {
+            for (let i = 0; i < this.size; i++) {
+                let slot = this.slots[i];
+                if (slot && slot.item.id === item.id) {
+                    slot.amount += amount;
+                    return true;
+                }
+            }
+        }
+
+        
+        for (let i = 0; i < this.size; i++) {
+            if (!this.slots[i]) {
+                this.slots[i] = { item, amount };
+                return true;
+            }
+        }
+
+        return false; 
+    },
+
+    remove(itemId, amount = 1) {
+        for (let i = 0; i < this.size; i++) {
+            let slot = this.slots[i];
+            if (slot && slot.item.id === itemId) {
+                slot.amount -= amount;
+
+                if (slot.amount <= 0) {
+                    this.slots[i] = null;
+                }
+                return true;
+            }
+        }
+        return false;
+    },
+
+    has(itemId, amount = 1) {
+        for (let slot of this.slots) {
+            if (slot && slot.item.id === itemId && slot.amount >= amount) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    clear() {
+        this.slots = new Array(this.size).fill(null);
+    }
+};
+
+Inventory.init();
 
 function TrackCursor(canvas) {
     canvas.addEventListener("mousemove", (event) => {
@@ -371,6 +433,22 @@ function DebugMode() {
         Debug.Player.screen.x,
         Debug.Player.screen.y + Player.size * 1.5
     )
+    let Enemies = []
+
+function SpawnEnemy(x, y) {
+    Enemies.push({
+        image: "Employee",
+        position: { x: x, y: y },
+        velocity: { x: 0, y: 0 },
+        size: 96,
+        speed: 1.5,
+        health: 20,
+        aggroRange: 600,
+        hitbox: { type: "circle", radius: 96 * 0.3 },
+        lastHit: 0
+    })
+}
+
 
     // Camera
     ctx.fillStyle = UI.Debug.Camera.color
@@ -501,7 +579,12 @@ let Player = {
     Agility: 1,
     Level: 1,
 
-    Experience: {Count: 0, Max: 5, Scaling: 1}
+    Experience: {Count: 0, Max: 5, Scaling: 1},
+    Inventory: {
+    items: [],
+    maxSlots: 12,
+    open: false
+
 }
 
 let World = {
@@ -571,17 +654,37 @@ let Blueprints = {
 }
 
 let layout = []
+let WorldItems = [];
 
-let selection = null;
+const Items = {
+    Money: {
+        id: 1,
+        image: "Money",
+        stackable: true
+    },
+    Coffee: {
+        id: 2,
+        image: "Coffee",
+        stackable: true
+    }
+};
 
-function Select(Tile1, Tile2) {
-    selection = {
-        minX: Math.min(Tile1.x, Tile2.x),
-        minY: Math.min(Tile1.y, Tile2.y),
-        maxX: Math.max(Tile1.x, Tile2.x),
-        maxY: Math.max(Tile1.y, Tile2.y)
-    };
+function RandomGenerator(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+    function SpawnItem(x, y, itemData) {
+    WorldItems.push({
+        position: { x, y },
+        size: 64,
+        item: itemData,
+        hitbox: {
+            type: "circle",
+            x: x,
+            y: y,
+            radius: 32
+        }
+    });
 }
+
 
 function ClearSelect() {
     selection = null;
@@ -903,7 +1006,34 @@ let input = {
     down: false,
 }
 
+function getTileAtWorld(x, y) {
+    const tileX = Math.floor(x / World.TileSize);
+    const tileY = Math.floor(y / World.TileSize);
+
+    if (tileX < 0 || tileY < 0 || tileX >= World.Size || tileY >= World.Size) {
+        return null;
+    }
+
+    return layout[tileY][tileX] ?? null;
+}
+
 function Void() {
+    function PickupCheck() {
+    const playerHitbox = TrackPlayerHitbox();
+
+    for (let i = WorldItems.length - 1; i >= 0; i--) {
+
+        if (Collision(playerHitbox, WorldItems[i].hitbox)) {
+
+            const added = Inventory.add(WorldItems[i].item, 1);
+
+            if (added) {
+                WorldItems.splice(i, 1);
+            }
+        }
+    }
+}
+
     const playerHitbox = TrackPlayerHitbox();
     let isColliding = false;
 
@@ -926,6 +1056,9 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "a") input.left = true;
     if (e.key === "s") input.down = true;
     if (e.key === "d") input.right = true;
+    if (e.key === "i") {
+    Player.Inventory.open = !Player.Inventory.open
+    }
 });
 
 document.addEventListener("keyup", (e) => {
@@ -957,6 +1090,21 @@ function MovePlayer() {
 }
 
 
+function DrawWorldItems() {
+    for (let worldItem of WorldItems) {
+
+        const screenX = worldItem.position.x - Debug.Camera.world.x + Debug.Camera.screen.x;
+        const screenY = worldItem.position.y - Debug.Camera.world.y + Debug.Camera.screen.y;
+
+        ctx.drawImage(
+            images[worldItem.item.image] || createPlaceholder(64),
+            screenX - worldItem.size / 2,
+            screenY - worldItem.size / 2,
+            worldItem.size,
+            worldItem.size
+        );
+    }
+}
 
 function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End = { x: Debug.Cursor.x, y: Debug.Cursor.y } ) {
 
@@ -1303,14 +1451,81 @@ function gameloop() {
     for (let layerKey in Layers) {
         DrawStructures(Layers[layerKey])
     }
+    function UpdateEnemies() {
+    for (let enemy of Enemies) {
+        const dx = Player.position.x - enemy.position.x
+        const dy = Player.position.y - enemy.position.y
+        const distance = Math.hypot(dx, dy)
 
-    DrawSelection()
+        if (distance < enemy.aggroRange) { // seuraa pelaajaa
+            const dirX = dx / distance
+            const dirY = dy / distance
+
+            enemy.velocity.x += dirX * enemy.speed
+            enemy.velocity.y += dirY * enemy.speed
+        }
+
+        // hidastetaan liike hiukan
+        enemy.velocity.x *= 0.9
+        enemy.velocity.y *= 0.9
+
+        enemy.position.x += enemy.velocity.x
+        enemy.position.y += enemy.velocity.y
+    }
+}
+
+function EnemyCombat() {
+    const playerHitbox = TrackPlayerHitbox()
+    for (let enemy of Enemies) {
+        const enemyHitbox = {
+            type: "circle",
+            x: enemy.position.x,
+            y: enemy.position.y,
+            radius: enemy.hitbox.radius
+        }
+
+        if (Collision(playerHitbox, enemyHitbox)) {
+            const now = Date.now()
+            if (!enemy.lastHit) enemy.lastHit = 0
+
+            if (now - enemy.lastHit > 800) {
+                Stats.Health -= 10
+                enemy.lastHit = now
+            }
+        }
+    }
+}
+    DrawWorldItems();
+    Drawenemies()
     DrawPlayer()
-
+    
     if (DebugEnabled) DebugMode()
     if (Stats.Floor === "TestArea") EditorMode()
+function DrawInventory() {
+    const size = 64 
+    const padding = 10
+    const startX = canvas.width / 2 - (size * Player.Inventory.maxSlots) / 2
+    const startY = canvas.height - 150
 
-    ShowUI()
+    
+    ctx.fillStyle = "rgba(0,0,0,0.7)"
+    ctx.fillRect(startX - padding, startY - padding, size * Player.Inventory.maxSlots + padding * 2, size + padding * 2)
+
+    
+    for (let i = 0; i < Player.Inventory.maxSlots; i++) {
+        const slot = Player.Inventory.items[i]
+        ctx.strokeStyle = "white"
+        ctx.strokeRect(startX + i * size, startY, size, size)
+
+        if (slot) {
+            const img = images[slot.item.image] || createPlaceholder(size)
+            ctx.drawImage(img, startX + i * size, startY, size, size)
+        }
+    }
+}
+
+   
+PickupCheck();
 
     ctx.restore()
 
