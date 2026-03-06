@@ -14,12 +14,21 @@ canvas.height = window.innerHeight
 
 ctx.fillStyle = "black"
 ctx.fillRect(0, 0, canvas.width, canvas.height)
+canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+});
+canvas.draggable = false
+canvas.addEventListener("mousedown", (e) => {
+    if (e.button === 2) {
+        e.preventDefault();
+    }
+});
 
 let Stats = {
     MaxHealth: 100,
     Health: 100,
     Money: 100,
-    Floor: 0,
+    Floor: -1,
     Points: 0
 }
 
@@ -38,7 +47,11 @@ function TrackCursor(canvas) {
 TrackCursor(canvas)
 
 const paths = {
-    // Blueprints
+
+    // Debug
+    DebugExit: "Kuvat/Debug/Debug_Exit.png",
+    DebugSpawn: "Kuvat/Debug/Debug_Spawn.png",
+    DebugSword: "Kuvat/Debug/Debug_Sword.png",
 
     // Collectables
     BigMoney: "Kuvat/Collectables/BigMoney.png",
@@ -425,11 +438,14 @@ function DebugMode() {
         }
 
         ctx.restore();
+
+        DrawSelection()
     }
 }
 
-function LoadingScreen() {
 
+
+function LoadingScreen() {
     DownloadImages(
         (progress) => {
             Startup.Progress = progress;
@@ -462,9 +478,6 @@ function LoadingScreen() {
             ctx.fillText(`${Startup.Progress}%`, Startup.Progressbar.fluid.x, Startup.Progressbar.fluid.y);
         },
         () => {
-            console.log("Kaikki kuvat ladattu");
-
-            PrepareFloor();
             gameloop();
         }
     );
@@ -474,7 +487,7 @@ let Player = {
 
     image: "Player",
 
-    position: { x: 0, y: 0 },
+    position: { x: 128, y: 128 },
     velocity: { x: 0, y: 0 },
     movement: { x: 0, y: 0 },
 
@@ -493,7 +506,6 @@ let Player = {
 
 let World = {
     TileSize: 64,
-    Size: 0
 }
 
 let Structures = {
@@ -516,6 +528,24 @@ let Structures = {
             draggable: false,
             layer: 0,
             id: 1
+        },
+        StairsSpawn: {
+            image: "DebugSpawn",
+            size: 2,
+            solid: false,
+            draggable: false,
+            onCollision: 0,
+            layer: 1,
+            id: 2
+        },
+        StairsExit: {
+            image: "DebugExit",
+            size: 2,
+            solid: false,
+            draggable: false,
+            onCollision: 0,
+            layer: 1,
+            id: 3
         }
     }
 }
@@ -527,48 +557,115 @@ let Layers = {
     Walls: 2
 }
 
+let Blueprints = {
+    Lobby: null,
+    TestArea: null,
+    Tutorial: [
+        [0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 0, 0, 0, 0]
+    ],
+    Start: null
+}
+
 let layout = []
+
+let selection = null;
+
+function Select(Tile1, Tile2) {
+    selection = {
+        minX: Math.min(Tile1.x, Tile2.x),
+        minY: Math.min(Tile1.y, Tile2.y),
+        maxX: Math.max(Tile1.x, Tile2.x),
+        maxY: Math.max(Tile1.y, Tile2.y)
+    };
+}
+
+function ClearSelect() {
+    selection = null;
+}
+
+function CopySelect() {
+    if (!selection) return [];
+
+    const { minX, minY, maxX, maxY } = selection;
+    let Copy = [];
+
+    for (let y = minY; y <= maxY; y++) {
+        let row = [];
+        for (let x = minX; x <= maxX; x++) {
+            const tile = layout[y]?.[x];
+            row.push(tile && typeof tile === "object" ? tile.type : tile ?? -1);
+        }
+        Copy.push(row);
+    }
+
+    return Copy;
+}
+
+function DrawSelection() {
+    if (!selection) return;
+
+    const { minX, minY, maxX, maxY } = selection;
+
+    const startX = minX * World.TileSize - Debug.Camera.world.x + Debug.Camera.screen.x;
+    const startY = minY * World.TileSize - Debug.Camera.world.y + Debug.Camera.screen.y;
+    const width  = (maxX - minX + 1) * World.TileSize;
+    const height = (maxY - minY + 1) * World.TileSize;
+
+    ctx.save();
+    ctx.strokeStyle = "yellow";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(startX, startY, width, height);
+    ctx.restore();
+}
 
 function RandomGenerator(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
-function PrepareFloor(Blueprint) {
+Stats = new Proxy(Stats, {
+    set(target, property, value) {
+        if (property === 'Floor' && target.Floor !== value) {
+            target.Floor = value;
+            console.log(`Floor vaihtui: ${value}`);
+            if (value === "Lobby") {
+                PrepareFloor(Blueprints.Lobby, value)
+            } else if (value === "TestArea") {
+                PrepareFloor(Blueprints.TestArea, value)
+            } else if (value === -1) {
+                PrepareFloor(Blueprints.Tutorial, value)
+            } else if (value === 0) {
+                PrepareFloor(Blueprints.Tutorial, value)
+            } else if (value >= 1 && value <= 9) {
+                PrepareFloor(null, value)
+            }
+            return true;
+        }
+        target[property] = value;
+        return true;
+    }
+})
+
+function PrepareFloor(Blueprint, Floor) {
 
     layout = [];
 
-    if (!Blueprint) {
-
-        World.Size = RandomGenerator(50, 100);
-
-        for (let y = 0; y < World.Size; y++) {
-
-            layout[y] = [];
-
-            for (let x = 0; x < World.Size; x++) {
-
-                if (x === 0 || y === 0 || x === World.Size - 1 || y === World.Size - 1) {
-                    layout[y][x] = 0;
-                } else {
-                    layout[y][x] = 1;
-                }
-            }
-        }
-
-    } else {
-
+    if (Blueprint) {
+        layout = Blueprint.map(row => [...row]);
     }
     BuildFloor()
 }
 
-
-
 function BuildFloor() {
     Structures.Tiles = [];
 
-    for (let y = 0; y < World.Size; y++) {
-        for (let x = 0; x < World.Size; x++) {
-            const typeId = layout[y][x];
+    for (let y = 0; y < layout.length; y++) {
+        for (let x = 0; x < layout[y].length; x++) {
+            const cell = layout[y][x];
+            const typeId = (cell && typeof cell === 'object') ? cell.type : cell;
             let typeKey = null;
 
             for (const key in Structures.Types) {
@@ -617,27 +714,49 @@ function BuildFloor() {
     console.log(`Lattia rakennettu: ${Structures.Tiles.length} ruutua`);
 }
 
+function GetRenderArea() {
+
+    const tilesX = Math.ceil(canvas.width / World.TileSize)
+    const tilesY = Math.ceil(canvas.height / World.TileSize)
+
+    const overscan = 1.5
+
+    const renderX = Math.ceil(tilesX * overscan)
+    const renderY = Math.ceil(tilesY * overscan)
+
+    const camTileX = Math.floor(Debug.Camera.world.x / World.TileSize)
+    const camTileY = Math.floor(Debug.Camera.world.y / World.TileSize)
+
+    const startX = camTileX - Math.floor(renderX / 2)
+    const startY = camTileY - Math.floor(renderY / 2)
+
+    const endX = camTileX + Math.floor(renderX / 2)
+    const endY = camTileY + Math.floor(renderY / 2)
+
+    return { startX, startY, endX, endY }
+}
+
 function DrawStructures(layer) {
+    const { startX, startY, endX, endY } = GetRenderArea();
+
     for (let tile of Structures.Tiles) {
+        if (!tile.origin) continue;
         if (tile.layer !== layer) continue;
+        if (tile.x < startX || tile.x > endX || tile.y < startY || tile.y > endY) continue;
 
         const type = Structures.Types[tile.type];
-        
         const screenX = tile.worldX - Debug.Camera.world.x + Debug.Camera.screen.x;
         const screenY = tile.worldY - Debug.Camera.world.y + Debug.Camera.screen.y;
-        
-        if (screenX > -World.TileSize && screenX < canvas.width &&
-            screenY > -World.TileSize && screenY < canvas.height) {
-            
-            if (images[type.image]) {
-                ctx.drawImage(
-                    images[type.image],
-                    screenX,
-                    screenY,
-                    World.TileSize,
-                    World.TileSize
-                );
-            }
+
+        const img = images[type.image];
+        if (img) {
+            ctx.drawImage(
+                img,
+                screenX,
+                screenY,
+                type.size * World.TileSize,
+                type.size * World.TileSize
+            );
         }
     }
 }
@@ -660,6 +779,8 @@ let Debug = {
         y: 0
     },
 }
+
+
 
 function TrackPlayerHitbox() {
     return {
@@ -723,6 +844,8 @@ function Collision(Target1, Target2) {
     return false;
 }
 
+Player.Godmode = false
+
 function Effect() {
     const playerHitbox = TrackPlayerHitbox();
 
@@ -731,25 +854,26 @@ function Effect() {
 
         if (Collision(playerHitbox, tile.hitbox)) {
             const type = Structures.Types[tile.type];
+            if (!Player.Godmode) {
+                if (type.onCollision) {
+                    type.onCollision(tile, Player);
+                }
 
-            if (type.onCollision) {
-                type.onCollision(tile, Player);
-            }
+                if (type.solid) {
+                    const DistanceX = Player.position.x - tile.hitbox.x;
+                    const DistanceY = Player.position.y - tile.hitbox.y;
 
-            if (type.solid) {
-                const DistanceX = Player.position.x - tile.hitbox.x;
-                const DistanceY = Player.position.y - tile.hitbox.y;
+                    const overlapX = playerHitbox.radius + tile.hitbox.width / 2 - Math.abs(DistanceX);
+                    const overlapY = playerHitbox.radius + tile.hitbox.height / 2 - Math.abs(DistanceY);
 
-                const overlapX = playerHitbox.radius + tile.hitbox.width / 2 - Math.abs(DistanceX);
-                const overlapY = playerHitbox.radius + tile.hitbox.height / 2 - Math.abs(DistanceY);
-
-                if (overlapX > 0 && overlapY > 0) {
-                    if (overlapX < overlapY) {
-                        Player.position.x += DistanceX > 0 ? overlapX : -overlapX;
-                        Player.velocity.x *= -1; 
-                    } else {
-                        Player.position.y += DistanceY > 0 ? overlapY : -overlapY;
-                        Player.velocity.y = -1; 
+                    if (overlapX > 0 && overlapY > 0) {
+                        if (overlapX < overlapY) {
+                            Player.position.x += DistanceX > 0 ? overlapX : -overlapX;
+                            Player.velocity.x *= -1; 
+                        } else {
+                            Player.position.y += DistanceY > 0 ? overlapY : -overlapY;
+                            Player.velocity.y = -1; 
+                        }
                     }
                 }
             }
@@ -762,7 +886,13 @@ function TeleportPlayer(x, y) {
     Player.position.y = y
 }
 
-
+function Godmode() {
+    if (!Player.Godmode) {
+        Player.Godmode = true
+    } else {
+        Player.Godmode = false
+    }
+}
 
 let input = {
     leftclick: false,
@@ -773,23 +903,12 @@ let input = {
     down: false,
 }
 
-function getTileAtWorld(x, y) {
-    const tileX = Math.floor(x / World.TileSize);
-    const tileY = Math.floor(y / World.TileSize);
-
-    if (tileX < 0 || tileY < 0 || tileX >= World.Size || tileY >= World.Size) {
-        return null;
-    }
-
-    return layout[tileY][tileX] ?? null;
-}
-
 function Void() {
     const playerHitbox = TrackPlayerHitbox();
     let isColliding = false;
 
     for (let tile of Structures.Tiles) {
-        if (!tile.hitbox || !tile.hitbox.solid) continue;
+        if (!tile.hitbox) continue;
 
         if (Collision(playerHitbox, tile.hitbox)) {
             isColliding = true;
@@ -798,11 +917,7 @@ function Void() {
     }
 
     if (!isColliding) {
-        const tile = getTileAtWorld(Player.position.x, Player.position.y);
-
-        if (tile === null) {
-            console.log("u r ded");
-        }
+        console.log("u r ded");
     }
 }
 
@@ -871,6 +986,282 @@ function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End 
 
 }
 
+let EditorPad = {
+    Position: { x: 0, y: 0 },
+    Size: 256,
+    Body: "black",
+    Outline: { 
+        Color: "cyan",
+        Size: 8
+    },
+    
+    Scroll: {
+        offset: 0,
+        speed: 32,
+        max: 0
+    },
+    Slots: {
+        Body: "black",
+        Outline: { 
+            Color: "white",
+            Size: 2
+        },
+        size: 32,
+        gap: 8,
+        columns: 6
+    }
+}
+
+let isDragging = false;
+let dragType = null;
+
+canvas.addEventListener("mousedown", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const worldX = Math.floor((Debug.Camera.world.x - Debug.Camera.screen.x + mouseX) / World.TileSize);
+    const worldY = Math.floor((Debug.Camera.world.y - Debug.Camera.screen.y + mouseY) / World.TileSize);
+
+    if (e.button === 0 && EditorPad.Selected) {
+        BuildTile({ x: worldX, y: worldY }, EditorPad.Selected);
+        isDragging = true;
+        dragType = "build";
+    } else if (e.button === 2) {
+        RemoveTile({ x: worldX, y: worldY });
+        isDragging = true;
+        dragType = "erase";
+    }
+});
+
+canvas.addEventListener("mousemove", (e) => {
+    if (!isDragging || !dragType) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const worldX = Math.floor((Debug.Camera.world.x - Debug.Camera.screen.x + mouseX) / World.TileSize);
+    const worldY = Math.floor((Debug.Camera.world.y - Debug.Camera.screen.y + mouseY) / World.TileSize);
+
+    if (dragType === "erase") {
+        RemoveTile({ x: worldX, y: worldY });
+    } else if (dragType === "build" && EditorPad.Selected) {
+        BuildTile({ x: worldX, y: worldY }, EditorPad.Selected);
+    }
+});
+
+canvas.addEventListener("mouseup", () => {
+    isDragging = false;
+    dragType = null;
+});
+
+function RemoveTile(Position) {
+    const x = Position.x;
+    const y = Position.y;
+
+    const typeId = layout[y]?.[x];
+    if (typeId === undefined || typeId === -1) return;
+
+    const tile = Structures.Tiles.find(t =>
+        t.origin &&
+        x >= t.originPos.x && x < t.originPos.x + Structures.Types[t.type].size &&
+        y >= t.originPos.y && y < t.originPos.y + Structures.Types[t.type].size
+    );
+
+    if (!tile) return;
+
+    const startX = tile.originPos.x;
+    const startY = tile.originPos.y;
+    const type = Structures.Types[tile.type];
+
+    for (let dy = 0; dy < type.size; dy++) {
+        for (let dx = 0; dx < type.size; dx++) {
+            const tx = startX + dx;
+            const ty = startY + dy;
+            if (layout[ty]) layout[ty][tx] = -1;
+        }
+    }
+
+    Structures.Tiles = Structures.Tiles.filter(t =>
+        !(t.originPos && t.originPos.x === startX && t.originPos.y === startY)
+    );
+}
+
+function EditorMode() {
+    if (Stats.Floor !== "TestArea") return;
+
+    const pad = EditorPad;
+    const slot = pad.Slots;
+    const typeEntries = Object.entries(Structures.Types);
+
+    ctx.save();
+
+    ctx.fillStyle = pad.Body;
+    ctx.fillRect(pad.Position.x, pad.Position.y, pad.Size, pad.Size);
+
+    ctx.strokeStyle = pad.Outline.Color;
+    ctx.lineWidth = pad.Outline.Size;
+    ctx.strokeRect(pad.Position.x, pad.Position.y, pad.Size, pad.Size);
+
+    const slotFullSize = slot.size + slot.gap;
+    const usableHeight = pad.Size - pad.Outline.Size * 2;
+    const visibleRows = Math.floor(usableHeight / slotFullSize);
+
+    const totalRows = Math.ceil(typeEntries.length / slot.columns);
+    pad.Scroll.max = Math.max(0, totalRows - visibleRows);
+
+    const firstVisibleRow = Math.floor(pad.Scroll.offset / slotFullSize);
+
+    let typeIndex = firstVisibleRow * slot.columns;
+
+    for (let row = 0; row < visibleRows + 1; row++) {
+        for (let col = 0; col < slot.columns; col++) {
+            if (typeIndex >= typeEntries.length) break;
+
+            const drawX = pad.Position.x + pad.Outline.Size + col * slotFullSize;
+            const drawY = pad.Position.y + pad.Outline.Size + row * slotFullSize - (pad.Scroll.offset % slotFullSize);
+
+            const [name, data] = typeEntries[typeIndex];
+
+            ctx.fillStyle = slot.Body;
+            ctx.fillRect(drawX, drawY, slot.size, slot.size);
+
+            ctx.strokeStyle = slot.Outline.Color;
+            ctx.lineWidth = slot.Outline.Size;
+            ctx.strokeRect(drawX, drawY, slot.size, slot.size);
+
+            const img = images[data.image];
+            if (img) {
+                ctx.drawImage(img, drawX, drawY, slot.size, slot.size);
+            } else {
+                ctx.fillStyle = "red";
+                ctx.fillRect(drawX + 4, drawY + 4, slot.size - 8, slot.size - 8);
+            }
+
+            typeIndex++;
+        }
+    }
+
+    if (Debug.Cursor.x && Debug.Cursor.y && EditorPad.Selected) {
+        const mouse = { x: Debug.Cursor.x, y: Debug.Cursor.y };
+        const worldX = Math.floor((Debug.Camera.world.x - Debug.Camera.screen.x + mouse.x) / World.TileSize);
+        const worldY = Math.floor((Debug.Camera.world.y - Debug.Camera.screen.y + mouse.y) / World.TileSize);
+
+        const tileType = Structures.Types[EditorPad.Selected];
+        if (tileType) {
+            const img = images[tileType.image];
+            if (img) {
+                ctx.globalAlpha = 0.5;
+                ctx.drawImage(
+                    img,
+                    worldX * World.TileSize - Debug.Camera.world.x + Debug.Camera.screen.x,
+                    worldY * World.TileSize - Debug.Camera.world.y + Debug.Camera.screen.y,
+                    World.TileSize * tileType.size,
+                    World.TileSize * tileType.size
+                );
+                ctx.globalAlpha = 1;
+            }
+        }
+    }
+
+    ctx.restore();
+}
+
+
+
+canvas.addEventListener("mousedown", (e) => {
+    if (Stats.Floor !== "TestArea") return;
+
+    const pad = EditorPad;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (
+        mouseX >= pad.Position.x &&
+        mouseX <= pad.Position.x + pad.Size &&
+        mouseY >= pad.Position.y &&
+        mouseY <= pad.Position.y + pad.Size
+    ) {
+        const slot = pad.Slots;
+        const slotFullSize = slot.size + slot.gap;
+        const col = Math.floor((mouseX - pad.Position.x - pad.Outline.Size) / slotFullSize);
+        const row = Math.floor((mouseY - pad.Position.y - pad.Outline.Size + pad.Scroll.offset) / slotFullSize);
+
+        const typeEntries = Object.entries(Structures.Types);
+        const index = row * slot.columns + col;
+
+        if (index >= 0 && index < typeEntries.length) {
+            EditorPad.Selected = typeEntries[index][0];
+        }
+        return;
+    }
+
+    if (!EditorPad.Selected) return;
+
+    const worldX = Math.floor((Debug.Camera.world.x - Debug.Camera.screen.x + mouseX) / World.TileSize);
+    const worldY = Math.floor((Debug.Camera.world.y - Debug.Camera.screen.y + mouseY) / World.TileSize);
+
+    const type = Structures.Types[EditorPad.Selected];
+    if (!type) return;
+
+    BuildTile({ x: worldX, y: worldY }, EditorPad.Selected);
+});
+
+function BuildTile(Position, TileKey) {
+    const type = Structures.Types[TileKey];
+    if (!type) return;
+
+    const startX = Position.x;
+    const startY = Position.y;
+
+    for (let y = 0; y < type.size; y++) {
+        for (let x = 0; x < type.size; x++) {
+            const tx = startX + x;
+            const ty = startY + y;
+            if (layout[ty]?.[tx] !== undefined && layout[ty][tx] !== -1) {
+                return;
+            }
+        }
+    }
+
+    for (let y = 0; y < type.size; y++) {
+        if (!layout[startY + y]) layout[startY + y] = [];
+    }
+
+    for (let y = 0; y < type.size; y++) {
+        for (let x = 0; x < type.size; x++) {
+            const tx = startX + x;
+            const ty = startY + y;
+            layout[ty][tx] = type.id;
+
+            const worldX = tx * World.TileSize;
+            const worldY = ty * World.TileSize;
+
+            Structures.Tiles.push({
+                type: TileKey,
+                x: tx,
+                y: ty,
+                origin: x === 0 && y === 0,
+                originPos: { x: startX, y: startY },
+                worldX,
+                worldY,
+                layer: type.layer,
+                hitbox: {
+                    type: "rect",
+                    x: worldX + World.TileSize / 2,
+                    y: worldY + World.TileSize / 2,
+                    width: World.TileSize,
+                    height: World.TileSize,
+                    solid: type.solid
+                }
+            });
+        }
+    }
+
+}
+
 function TrackPlayer() {
     Debug.Camera.world.x = Player.position.x;
     Debug.Camera.world.y = Player.position.y;
@@ -885,8 +1276,6 @@ function ShowUI() {
 
 LoadingScreen()
 
-PrepareFloor()
-
 DebugEnabled = false
 
 document.addEventListener("keydown", (e) => {
@@ -900,31 +1289,30 @@ document.addEventListener("keydown", (e) => {
 })
 
 function gameloop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "black"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = "black";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.save()
 
     TrackPlayer()
     Effect()
     Void()
     MovePlayer()
-    
+
     for (let layerKey in Layers) {
-        DrawStructures(Layers[layerKey]);
+        DrawStructures(Layers[layerKey])
     }
-    
+
+    DrawSelection()
     DrawPlayer()
 
-    if (DebugEnabled) {
-        DebugMode()
-    }
+    if (DebugEnabled) DebugMode()
+    if (Stats.Floor === "TestArea") EditorMode()
 
     ShowUI()
 
+    ctx.restore()
+
     requestAnimationFrame(gameloop)
 }
-
-// UI (Tony Ruotsalainen)
-// Rakennus (Tony Ruotsalainen)
-// Musiikki (Paajanen Jesse)
