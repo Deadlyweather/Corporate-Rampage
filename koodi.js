@@ -1004,6 +1004,7 @@ let input = {
     right: false,
     up: false,
     down: false,
+    grab: false
 }
 
 function getTileAtWorld(x, y) {
@@ -1058,6 +1059,8 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "d") input.right = true;
     if (e.key === "i") {
     Player.Inventory.open = !Player.Inventory.open
+    if (e.key === "e") input.grab = true;
+
     }
 });
 
@@ -1066,6 +1069,8 @@ document.addEventListener("keyup", (e) => {
     if (e.key === "a") input.left = false;
     if (e.key === "s") input.down = false;
     if (e.key === "d") input.right = false;
+    if (e.key === "e") input.grab = false;
+
 });
 
 function MovePlayer() {
@@ -1102,6 +1107,30 @@ function DrawWorldItems() {
             screenY - worldItem.size / 2,
             worldItem.size,
             worldItem.size
+        // seinään vetäminen
+if (input.grab && Player.Inventory.items.length === 0) {
+
+    const playerHitbox = TrackPlayerHitbox();
+
+    for (let tile of Structures.Tiles) {
+
+        if (!tile.hitbox) continue;
+        if (!tile.hitbox.solid) continue;
+
+        const dx = tile.hitbox.x - Player.position.x;
+        const dy = tile.hitbox.y - Player.position.y;
+
+        const distance = Math.hypot(dx, dy);
+
+        if (distance < 150) { 
+
+            Player.velocity.x += dx * 0.02;
+            Player.velocity.y += dy * 0.02;
+
+        }
+    }
+}
+
         );
     }
 }
