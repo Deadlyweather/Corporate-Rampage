@@ -581,11 +581,11 @@ let Player = {
 
     Experience: {Count: 0, Max: 5, Scaling: 1},
     Inventory: {
-    items: [],
-    maxSlots: 12,
-    open: false
-
-}
+        items: [],
+        maxSlots: 12,
+        open: false
+   }
+};
 
 let World = {
     TileSize: 64,
@@ -1019,7 +1019,6 @@ function getTileAtWorld(x, y) {
 }
 
 function Void() {
-    function PickupCheck() {
     const playerHitbox = TrackPlayerHitbox();
 
     for (let i = WorldItems.length - 1; i >= 0; i--) {
@@ -1034,7 +1033,7 @@ function Void() {
         }
     }
 }
-
+function PickupCheck() {
     const playerHitbox = TrackPlayerHitbox();
     let isColliding = false;
 
