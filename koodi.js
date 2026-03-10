@@ -401,6 +401,22 @@ function Points() {
     )
 }
 
+let Enemies = []
+
+function SpawnEnemy(x, y) {
+    Enemies.push({
+        image: "Employee",
+        position: { x: x, y: y },
+        velocity: { x: 0, y: 0 },
+        size: 96,
+        speed: 1.5,
+        health: 20,
+        aggroRange: 600,
+        hitbox: { type: "circle", radius: 96 * 0.3 },
+        lastHit: 0
+    })
+}
+
 function DebugMode() {
 
     // Cursor
@@ -433,23 +449,8 @@ function DebugMode() {
         Debug.Player.screen.x,
         Debug.Player.screen.y + Player.size * 1.5
     )
-    let Enemies = []
 
-function SpawnEnemy(x, y) {
-    Enemies.push({
-        image: "Employee",
-        position: { x: x, y: y },
-        velocity: { x: 0, y: 0 },
-        size: 96,
-        speed: 1.5,
-        health: 20,
-        aggroRange: 600,
-        hitbox: { type: "circle", radius: 96 * 0.3 },
-        lastHit: 0
-    })
-}
-
-
+    
     // Camera
     ctx.fillStyle = UI.Debug.Camera.color
     ctx.font = `${UI.Debug.Camera.size}px ${UI.Debug.Camera.font}`
@@ -523,6 +524,11 @@ function SpawnEnemy(x, y) {
 
 
 
+
+
+
+
+
 function LoadingScreen() {
     DownloadImages(
         (progress) => {
@@ -580,11 +586,10 @@ let Player = {
     Level: 1,
 
     Experience: {Count: 0, Max: 5, Scaling: 1},
-    Inventory: {
+    Inventory: {},
     items: [],
     maxSlots: 12,
     open: false
-
 }
 
 let World = {
@@ -671,7 +676,9 @@ const Items = {
 
 function RandomGenerator(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
-    function SpawnItem(x, y, itemData) {
+}
+
+function SpawnItem(x, y, itemData) {
     WorldItems.push({
         position: { x, y },
         size: 64,
@@ -684,7 +691,6 @@ function RandomGenerator(min, max) {
         }
     });
 }
-
 
 function ClearSelect() {
     selection = null;
@@ -1018,8 +1024,32 @@ function getTileAtWorld(x, y) {
     return layout[tileY][tileX] ?? null;
 }
 
+let isColliding = false;
+
 function Void() {
-    function PickupCheck() {
+    const playerHitbox = TrackPlayerHitbox();
+    
+    for (let tile of Structures.Tiles) {
+        if (!tile.hitbox) continue;
+
+        if (Collision(playerHitbox, tile.hitbox)) {
+            isColliding = true;
+            break;
+        }
+        
+    }
+
+    if (!isColliding) {
+        console.log("u r ded");
+    }
+}
+
+
+
+    
+
+
+function PickupCheck() {
     const playerHitbox = TrackPlayerHitbox();
 
     for (let i = WorldItems.length - 1; i >= 0; i--) {
@@ -1032,23 +1062,6 @@ function Void() {
                 WorldItems.splice(i, 1);
             }
         }
-    }
-}
-
-    const playerHitbox = TrackPlayerHitbox();
-    let isColliding = false;
-
-    for (let tile of Structures.Tiles) {
-        if (!tile.hitbox) continue;
-
-        if (Collision(playerHitbox, tile.hitbox)) {
-            isColliding = true;
-            break;
-        }
-    }
-
-    if (!isColliding) {
-        console.log("u r ded");
     }
 }
 
@@ -1107,31 +1120,28 @@ function DrawWorldItems() {
             screenY - worldItem.size / 2,
             worldItem.size,
             worldItem.size
-        // seinään vetäminen
-if (input.grab && Player.Inventory.items.length === 0) {
-
-    const playerHitbox = TrackPlayerHitbox();
-
-    for (let tile of Structures.Tiles) {
-
-        if (!tile.hitbox) continue;
-        if (!tile.hitbox.solid) continue;
-
-        const dx = tile.hitbox.x - Player.position.x;
-        const dy = tile.hitbox.y - Player.position.y;
-
-        const distance = Math.hypot(dx, dy);
-
-        if (distance < 150) { 
-
-            Player.velocity.x += dx * 0.02;
-            Player.velocity.y += dy * 0.02;
-
-        }
-    }
-}
-
         );
+
+        if (input.grab && Player.Inventory.items.length === 0) {
+
+            const playerHitbox = TrackPlayerHitbox();
+
+            for (let tile of Structures.Tiles) {
+
+                if (!tile.hitbox) continue;
+                if (!tile.hitbox.solid) continue;
+
+                const dx = tile.hitbox.x - Player.position.x;
+                const dy = tile.hitbox.y - Player.position.y;
+
+                const distance = Math.hypot(dx, dy);
+
+                if (distance < 150) { 
+                    Player.velocity.x += dx * 0.02;
+                    Player.velocity.y += dy * 0.02;
+                }
+            }
+        }
     }
 }
 
@@ -1439,6 +1449,29 @@ function BuildTile(Position, TileKey) {
 
 }
 
+function DrawInventory() {
+    const size = 64 
+    const padding = 10
+    const startX = canvas.width / 2 - (size * Player.Inventory.maxSlots) / 2
+    const startY = canvas.height - 150
+
+    
+    ctx.fillStyle = "rgba(0,0,0,0.7)"
+    ctx.fillRect(startX - padding, startY - padding, size * Player.Inventory.maxSlots + padding * 2, size + padding * 2)
+
+    
+    for (let i = 0; i < Player.Inventory.maxSlots; i++) {
+        const slot = Player.Inventory.items[i]
+        ctx.strokeStyle = "white"
+        ctx.strokeRect(startX + i * size, startY, size, size)
+
+        if (slot) {
+            const img = images[slot.item.image] || createPlaceholder(size)
+            ctx.drawImage(img, startX + i * size, startY, size, size)
+        }
+    }
+}
+
 function TrackPlayer() {
     Debug.Camera.world.x = Player.position.x;
     Debug.Camera.world.y = Player.position.y;
@@ -1449,6 +1482,7 @@ function ShowUI() {
     Money()
     Floor()
     Points()
+    DrawInventory()
 }
 
 LoadingScreen()
@@ -1465,22 +1499,7 @@ document.addEventListener("keydown", (e) => {
     }
 })
 
-function gameloop() {
-
-    ctx.fillStyle = "black";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    ctx.save()
-
-    TrackPlayer()
-    Effect()
-    Void()
-    MovePlayer()
-
-    for (let layerKey in Layers) {
-        DrawStructures(Layers[layerKey])
-    }
-    function UpdateEnemies() {
+function UpdateEnemies() {
     for (let enemy of Enemies) {
         const dx = Player.position.x - enemy.position.x
         const dy = Player.position.y - enemy.position.y
@@ -1524,39 +1543,36 @@ function EnemyCombat() {
         }
     }
 }
+
+function gameloop() {
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.save()
+
+    TrackPlayer()
+    Effect()
+    Void()
+    MovePlayer()
+
+    for (let layerKey in Layers) {
+        DrawStructures(Layers[layerKey])
+    }
+
     DrawWorldItems();
-    Drawenemies()
+    // Drawenemies()
     DrawPlayer()
     
     if (DebugEnabled) DebugMode()
     if (Stats.Floor === "TestArea") EditorMode()
-function DrawInventory() {
-    const size = 64 
-    const padding = 10
-    const startX = canvas.width / 2 - (size * Player.Inventory.maxSlots) / 2
-    const startY = canvas.height - 150
 
-    
-    ctx.fillStyle = "rgba(0,0,0,0.7)"
-    ctx.fillRect(startX - padding, startY - padding, size * Player.Inventory.maxSlots + padding * 2, size + padding * 2)
-
-    
-    for (let i = 0; i < Player.Inventory.maxSlots; i++) {
-        const slot = Player.Inventory.items[i]
-        ctx.strokeStyle = "white"
-        ctx.strokeRect(startX + i * size, startY, size, size)
-
-        if (slot) {
-            const img = images[slot.item.image] || createPlaceholder(size)
-            ctx.drawImage(img, startX + i * size, startY, size, size)
-        }
-    }
-}
-
+    ShowUI()
    
-PickupCheck();
+    PickupCheck();
 
     ctx.restore()
 
     requestAnimationFrame(gameloop)
 }
+
