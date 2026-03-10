@@ -1028,7 +1028,6 @@ function getTileAtWorld(x, y) {
 let isColliding = false;
 
 function Void() {
-<<<<<<< HEAD
     const playerHitbox = TrackPlayerHitbox();
     
     for (let tile of Structures.Tiles) {
@@ -1046,14 +1045,7 @@ function Void() {
     }
 }
 
-
-
-    
-
-
 function PickupCheck() {
-=======
->>>>>>> b59ac92f652d3be5dff802385ec8fd28ad9fe190
     const playerHitbox = TrackPlayerHitbox();
 
     for (let i = WorldItems.length - 1; i >= 0; i--) {
@@ -1068,26 +1060,6 @@ function PickupCheck() {
         }
     }
 }
-<<<<<<< HEAD
-=======
-function PickupCheck() {
-    const playerHitbox = TrackPlayerHitbox();
-    let isColliding = false;
-
-    for (let tile of Structures.Tiles) {
-        if (!tile.hitbox) continue;
-
-        if (Collision(playerHitbox, tile.hitbox)) {
-            isColliding = true;
-            break;
-        }
-    }
-
-    if (!isColliding) {
-        console.log("u r ded");
-    }
-}
->>>>>>> b59ac92f652d3be5dff802385ec8fd28ad9fe190
 
 document.addEventListener("keydown", (e) => {
     if (e.key === "w") input.up = true;
@@ -1585,7 +1557,9 @@ function gameloop() {
     }
 
     DrawWorldItems();
-    // Drawenemies()
+    /* Drawenemies()
+    Tarvitsen tämän funktion
+    */
     DrawPlayer()
     
     if (DebugEnabled) DebugMode()
