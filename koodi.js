@@ -1140,6 +1140,21 @@ function DrawWorldItems() {
         }
     }
 }
+function DrawEnemies() {
+    for (let enemy of Enemies) {
+
+        const screenX = enemy.position.x - Debug.Camera.world.x + Debug.Camera.screen.x;
+        const screenY = enemy.position.y - Debug.Camera.world.y + Debug.Camera.screen.y;
+
+        ctx.drawImage(
+            images[enemy.image] || createPlaceholder(enemy.size),
+            screenX - enemy.size / 2,
+            screenY - enemy.size / 2,
+            enemy.size,
+            enemy.size
+        );
+    }
+}
 
 function DrawPlayer( Start = { x: canvas.width / 2, y: canvas.height / 2 }, End = { x: Debug.Cursor.x, y: Debug.Cursor.y } ) {
 
@@ -1551,15 +1566,14 @@ function gameloop() {
     Effect()
     Void()
     MovePlayer()
-
+    UpdateEnemies()
+    EnemyCombat()
     for (let layerKey in Layers) {
         DrawStructures(Layers[layerKey])
     }
 
     DrawWorldItems();
-    /* Drawenemies()
-    Tarvitsen tämän funktion
-    */
+    DrawEnemies();
     DrawPlayer()
     
     if (DebugEnabled) DebugMode()
