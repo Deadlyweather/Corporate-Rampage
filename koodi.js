@@ -695,6 +695,15 @@ function SpawnItem(x, y, itemData) {
     });
 }
 
+function Select(Tile1, Tile2) {
+    selection = {
+        minX: Math.min(Tile1.x, Tile2.x),
+        minY: Math.min(Tile1.y, Tile2.y),
+        maxX: Math.max(Tile1.x, Tile2.x),
+        maxY: Math.max(Tile1.y, Tile2.y)
+    };
+}
+
 function ClearSelect() {
     selection = null;
 }
