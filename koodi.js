@@ -403,6 +403,8 @@ function Points() {
 
 let Enemies = []
 
+
+
 function SpawnEnemy(x, y) {
     Enemies.push({
         image: "Employee",
