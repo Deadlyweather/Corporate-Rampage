@@ -1,14 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/png" href="Kuvat/Favicon.png">
-    <title>Corporate Rampage</title>
+    <title>Canvas Game - Moduuliversio</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Estää skrollauspalkit */
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
 </head>
 <body>
+
+    <!-- Pelin canvas-elementti -->
     <canvas id="canvas"></canvas>
+
+    <div id="audio-controls" style="position: absolute; top: 80px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px;">
+    <label>Musiikki: </label>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+    <button id="muteButton">Mykistä</button>
+</div>
+    <!-- TÄRKEÄÄ: type="module" mahdollistaa import-lauseet -->
+    <script type="module" src="main.js"></script>
+
 </body>
-<script src="koodi.js"></script>
 </html>
