@@ -178,6 +178,10 @@ const paths = {
     Level: "Kuvat/Stats/Level.png",
     Strength: "Kuvat/Stats/Strength.png",
 
+    // UI
+
+    HealthIcon: "Kuvat/UI/HealthIcon.png",
+
     // Walls
     BasicWall: "Kuvat/Walls/BasicWall.png"
 }
@@ -339,6 +343,7 @@ let Startup = {
 }
 
 function Healthbar() {
+
     // Bar
     ctx.fillStyle = UI.Healthbar.fluid.color
     ctx.fillRect(
@@ -358,6 +363,15 @@ function Healthbar() {
         `${Stats.Health}/${Stats.MaxHealth}`,
         UI.Healthbar.fluid.x,
         UI.Healthbar.fluid.y + UI.Healthbar.fluid.height / 2
+    )
+
+    // Icon
+    ctx.drawImage(
+        images["HealthIcon"],
+        UI.Healthbar.fluid.x - UI.Healthbar.fluid.width / 2 - 40 ,
+        UI.Healthbar.fluid.y - UI.Healthbar.fluid.height / 2 - 18,
+        64,
+        64
     )
 }
 
@@ -519,17 +533,8 @@ function DebugMode() {
         }
 
         ctx.restore();
-
-        DrawSelection()
     }
 }
-
-
-
-
-
-
-
 
 function LoadingScreen() {
     DownloadImages(
@@ -595,6 +600,55 @@ let Player = {
     }
 }
 
+let shop = {
+    types: {
+        Cold: {
+            image: "ColdMachine",
+            Inflation: 1,
+            Scaling: 1.5,
+            Inventory: {
+                Slot1: {
+                    Item: 0, // Water
+                    Cost: 1,
+                    Limit: Infinity
+                },
+                Slot2: {
+                    Item: 3, // Soda
+                    Cost: 100,
+                    Limit: 10
+                }
+            }
+        },
+        hot: {
+            image: "HotMachine",
+            Inflation: 1,
+            Scaling: 1.05,
+            Items: {
+                Coffee: {
+                    Item: 2, // Coffee
+                    Cost: 500,
+                    Limit: 1
+                }
+            }
+        },
+        // Ase kauppa jätetään pois. 
+        Premium: {
+            image: "PremiumMachine",
+            Inflation: 2,
+            Scaling: 1,
+            Items: {
+                none: {
+                    Item: null,
+                    Cost: 0,
+                    Limit: 0
+                }
+            }
+        }
+    }
+}
+
+
+
 let World = {
     TileSize: 64,
 }
@@ -648,6 +702,8 @@ let Layers = {
     Walls: 2
 }
 
+
+
 let Blueprints = {
     Lobby: null,
     TestArea: null,
@@ -694,6 +750,8 @@ function SpawnItem(x, y, itemData) {
         }
     });
 }
+
+let selection = null
 
 function Select(Tile1, Tile2) {
     selection = {
@@ -1151,6 +1209,7 @@ function DrawWorldItems() {
         }
     }
 }
+
 function DrawEnemies() {
     for (let enemy of Enemies) {
 
@@ -1593,6 +1652,8 @@ function gameloop() {
     ShowUI()
    
     PickupCheck();
+
+    DrawSelection()
 
     ctx.restore()
 
