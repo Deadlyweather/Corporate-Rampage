@@ -35,45 +35,55 @@ export function GenerateFloor(clearEnemies = true) {
     walls.push(new Wall(-size/2, -size/2, wallThick, size)); // Vasen
     walls.push(new Wall(size/2 - wallThick, -size/2, wallThick, size)); // Oikea
 
-   // 3. HUONEIDEN GENEROINTI (Vain jos ei ole Boss-taso)
+     // 3. HUONEIDEN GENEROINTI (Päivitetty satunnaisilla kooilla)
     if (Stats.Floor === 0 || Stats.Floor % 10 !== 0) {
-        const rooms = [];
-        const roomCount = 6; // Kuinka monta huonetta yritetään luoda
-        const minSize = 300;
-        const maxSize = 600;
+        const gridSize = 3; 
+        const margin = 200; 
+        const innerSize = size - (margin * 2); 
+        const cellSize = innerSize / gridSize;
+        const gap = 150; 
 
-        for (let i = 0; i < roomCount; i++) {
-            let w = minSize + Math.random() * (maxSize - minSize);
-            let h = minSize + Math.random() * (maxSize - minSize);
-            let x = (Math.random() - 0.5) * (size - 1000);
-            let y = (Math.random() - 0.5) * (size - 1000);
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                let xStart = -size/2 + margin + (col * cellSize);
+                let yStart = -size/2 + margin + (row * cellSize);
 
-            // Estetään päällekkäisyys ja turvaväli keskustaan
-            let overlap = rooms.some(r => 
-                x < r.x + r.w + 100 && x + w + 100 > r.x &&
-                y < r.y + r.h + 100 && y + h + 100 > r.y
-            );
-            let tooCloseToCenter = Math.abs(x) < 400 && Math.abs(y) < 400;
+                let cx = xStart + cellSize/2;
+                let cy = yStart + cellSize/2;
 
-            if (!overlap && !tooCloseToCenter) {
-                // Luodaan neljä seinää huoneelle
-                // Yläseinä (jossa oviaukko keskellä)
-                walls.push(new Wall(x, y, w / 2 - 60, wallThick)); 
-                walls.push(new Wall(x + w / 2 + 60, y, w / 2 - 60, wallThick));
+                if (Math.abs(cx) < 300 && Math.abs(cy) < 300) continue;
+
+                // TÄMÄ KOHTA: Määritellään uudet koot
+                let randomW = (cellSize - gap) * (0.8 + Math.random() * 0.2);
+                let randomH = (cellSize - gap) * (0.8 + Math.random() * 0.2);
+                let x = xStart + (cellSize - randomW) / 2;
+                let y = yStart + (cellSize - randomH) / 2;
+
+                const doorGap = 100;
+                // Arvotaan 2 ovea
+                let doors = [0, 1, 2, 3].sort(() => Math.random() - 0.5).slice(0, 2);
+
+                // HUOM: Käytä tässä randomW ja randomH muuttujia!
+                // Yläseinä
+                if (doors.includes(0)) {
+                    walls.push(new Wall(x, y, randomW/2 - doorGap/2, wallThick));
+                    walls.push(new Wall(x + randomW/2 + doorGap/2, y, randomW/2 - doorGap/2, wallThick));
+                } else { walls.push(new Wall(x, y, randomW, wallThick)); }
 
                 // Alaseinä
-                walls.push(new Wall(x, y + h - wallThick, w, wallThick));
+                if (doors.includes(1)) {
+                    walls.push(new Wall(x, y + randomH - wallThick, randomW/2 - doorGap/2, wallThick));
+                    walls.push(new Wall(x + randomW/2 + doorGap/2, y + randomH - wallThick, randomW/2 - doorGap/2, wallThick));
+                } else { walls.push(new Wall(x, y + randomH - wallThick, randomW, wallThick)); }
 
                 // Vasen seinä
-                walls.push(new Wall(x, y, wallThick, h));
-
+                walls.push(new Wall(x, y, wallThick, randomH));
                 // Oikea seinä
-                walls.push(new Wall(x + w - wallThick, y, wallThick, h));
-
-                rooms.push({x, y, w, h});
+                walls.push(new Wall(x + randomW - wallThick, y, wallThick, randomH));
             }
         }
     }
+
 
     // 4. UUDET VIHОLLISET JA KEYCARD
     if (Stats.Floor > 0 && Stats.Floor % 10 === 0) {
@@ -102,13 +112,10 @@ export function GenerateFloor(clearEnemies = true) {
         }
     }
 
-    // 5. PELAAJAN ALOITUSPISTE (Siirretty pois portaikon päältä)
+     // 5. PELAAJAN ALOITUSPISTE (Keskelle tyhjää tilaa)
     Debug.Player.world.x = 0;
-    Debug.Player.world.y = 400; // Pelaaja aloittaa portaikon alapuolelta
+    Debug.Player.world.y = 0; // Nyt keskusta on tyhjä "aula"
     
-    // Kamera kohdistuu pelaajaan heti
     Debug.Camera.world.x = 0;
-    Debug.Camera.world.y = 400;
-
-    console.log(`Kerros ${Stats.Floor} valmis. Vihollisia yhteensä: ${enemies.length}`);
+    Debug.Camera.world.y = 0;
 }
