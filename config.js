@@ -10,6 +10,18 @@ export let Stats = {
     Points: 0
 };
 
+export let attributes = {
+    STR: 10, // Vahvuus (1 STR = 10% melee Dmg + 1% knockback (100 cap) + 1 max hp)
+    END: 0, // Kestävyys (1 END = 1 damage reduction + 0.1% damage reduction (80 cap) + 1% knockback reduction (90 cap))
+    AGI: 10, // Nopeus (1 AGI = 10% speed + 0.1 cooldown reduction)
+    VIT: 0, // Elinvoimaisuus (1 VIT = 0.1 regeneration + 1% injury resistance)
+    /*
+    Pelaaja haavoittuneena eli alle 50% hp saa injury effektin joka voimistuu 1 stack per prosentti alle 50% hp
+    injury heikentää kaikkia attribuutteja 1 stack = 2% attribuutti vähennystä
+    injury resistance voi olla yli 100% joka tarkoittaa että jokainen stack antaa positiivisen bonuksen
+    */
+}
+
 export let keys = {};
 
 export let Debug = {

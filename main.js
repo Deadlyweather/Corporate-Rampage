@@ -8,6 +8,11 @@ import { GenerateFloor } from './level.js';
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+// contextmenu poistaja
+document.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+});
+
 // Efektimuuttuja aseen välähdykselle (viedään exportilla rendererille)
 export let muzzleFlash = 0;
 
@@ -67,7 +72,7 @@ function gameLoop() {
     RenderGame(ctx);     // Piirtää maailman, viholliset ja pelaajan
     ShowUI(ctx);         // Piirtää HUDin (elämät, rahat, boss-palkki)
     
-    // DrawDebugMode(ctx); // Poista kommentti jos haluat nähdä koordinaatit ruudulla
+    //DrawDebugMode(ctx); // Poista kommentti jos haluat nähdä koordinaatit ruudulla
 
     requestAnimationFrame(gameLoop);
 }

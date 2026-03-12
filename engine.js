@@ -10,7 +10,9 @@ export let enemies = [];
 
 // Pelin tilamuuttujat
 export let canShoot = true;
+export let canSwing = true;
 export let shootDelay = 200;
+export let swingDelay = 400;
 export let hasKeycard = false;
 
 /**
@@ -37,11 +39,27 @@ export function Shoot() {
     let targetX = Debug.Cursor.x - Debug.Camera.offset.x;
     let targetY = Debug.Cursor.y - Debug.Camera.offset.y;
     let angle = Math.atan2(targetY - Debug.Player.world.y, targetX - Debug.Player.world.x);
+    let type = "Bullet"
     
-    projectiles.push(new Projectile(Debug.Player.world.x, Debug.Player.world.y, angle));
+    projectiles.push(new Projectile(Debug.Player.world.x, Debug.Player.world.y, angle, type));
     
+    canSwing = false;
     canShoot = false;
-    setTimeout(() => canShoot = true, shootDelay);
+    setTimeout(() => canShoot = true, canSwing = true, shootDelay);
+}
+
+export function Swing() {
+    if (!canSwing) return;
+
+    let targetX = Debug.Cursor.x - Debug.Camera.offset.x;
+    let targetY = Debug.Cursor.y - Debug.Camera.offset.y;
+    let angle = Math.atan2(targetY - Debug.Player.world.y, targetX - Debug.Player.world.x);
+    let type = "Slash"
+
+    projectiles.push(new Projectile(Debug.Player.world.x, Debug.Player.world.y, angle, type = "Slash"))
+
+    canSwing = false;
+    setTimeout(() => canSwing = true, swingDelay);
 }
 
 /**

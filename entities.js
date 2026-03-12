@@ -117,10 +117,11 @@ export class Enemy {
 }
 
 export class Projectile {
-    constructor(x, y, angle) {
+    constructor(x, y, angle, type) {
         this.x = x;
         this.y = y;
         this.angle = angle;
+        this.type = type;
         this.speed = 10;
         this.size = 8;
         this.alive = true;
@@ -138,6 +139,14 @@ export class Projectile {
             }
         });
     }
+
+    // if (type = "Bullet") {
+        
+    // }
+
+    // if (type = "Slash") {
+        
+    // }
 
     draw(ctx) {
         ctx.fillStyle = "yellow";
