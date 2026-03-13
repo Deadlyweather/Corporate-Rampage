@@ -12,7 +12,7 @@ export let enemies = [];
 export let canShoot = true;
 export let canSwing = true;
 export let shootDelay = 200;
-export let swingDelay = 400;
+export let swingDuration = 1000;
 export let hasKeycard = false;
 
 /**
@@ -33,33 +33,24 @@ export function SpawnExplosion(x, y, color) {
 /**
  * Luo uuden ammuksen pelaajan sijainnista kohti hiirtä
  */
-export function Shoot() {
-    if (!canShoot) return;
+export function Shoot(type) {
+    if ((type === "Bullet" && !canShoot) || (type === "Slash" && !canSwing)) return;
 
     let targetX = Debug.Cursor.x - Debug.Camera.offset.x;
     let targetY = Debug.Cursor.y - Debug.Camera.offset.y;
     let angle = Math.atan2(targetY - Debug.Player.world.y, targetX - Debug.Player.world.x);
-    let type = "Bullet"
-    
+
     projectiles.push(new Projectile(Debug.Player.world.x, Debug.Player.world.y, angle, type));
-    
-    canSwing = false;
-    canShoot = false;
-    setTimeout(() => canShoot = true, canSwing = true, shootDelay);
-}
 
-export function Swing() {
-    if (!canSwing) return;
+    if (type === "Bullet") {
+        canShoot = false;
+        setTimeout(() => canShoot = true, shootDelay);
+    }
 
-    let targetX = Debug.Cursor.x - Debug.Camera.offset.x;
-    let targetY = Debug.Cursor.y - Debug.Camera.offset.y;
-    let angle = Math.atan2(targetY - Debug.Player.world.y, targetX - Debug.Player.world.x);
-    let type = "Slash"
-
-    projectiles.push(new Projectile(Debug.Player.world.x, Debug.Player.world.y, angle, type = "Slash"))
-
-    canSwing = false;
-    setTimeout(() => canSwing = true, swingDelay);
+    if (type === "Slash") {
+        canSwing = false;
+        setTimeout(() => canSwing = true, swingDuration);
+    }
 }
 
 /**
@@ -125,30 +116,68 @@ export function UpdateWorld(walls) {
 
     // 1. Pelaajan ammukset ja osumat
     projectiles = projectiles.filter(p => p.alive);
+
     projectiles.forEach(p => {
         p.update(walls);
+
         enemies.forEach(e => {
-            let dx = p.x - e.x;
-            let dy = p.y - e.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
+
+            let hit = false;
+
+            if (p.type === "Bullet") {
+
+                let dx = p.x - e.x;
+                let dy = p.y - e.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < e.size / 2) {
+                    hit = true;
+                    p.alive = false;
+                }
+            } 
             
-            if (dist < e.size / 2) {
+            else if (p.type === "Slash") {
+
+                let dx = e.x - p.x;
+                let dy = e.y - p.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < p.size) {
+
+                    let angleToEnemy = Math.atan2(dy, dx);
+
+                    let startAngle = p.angle;
+                    let endAngle = startAngle + Math.PI;
+
+                    let norm = (angleToEnemy - startAngle + Math.PI * 2) % (Math.PI * 2);
+
+                    if (norm <= Math.PI) {
+                        hit = true;
+                    }
+
+                }
+            }
+
+            if (hit) {
+
                 e.health -= p.damage;
-                p.alive = false;
-                
+
                 if (e.health <= 0) {
+
                     Stats.Points += 100;
                     Stats.Money += 10;
+
                     SpawnExplosion(e.x, e.y, e.color);
-                    
-                    // Poimitaan avain, jos tällä vihollisella oli se
+
                     if (e.hasKeycard) {
                         hasKeycard = true;
                         console.log("AVAINKORTTI POIMITTU!");
                     }
                 }
             }
+
         });
+
     });
 
     // 2. Vihollisen ammukset ja osumat pelaajaan

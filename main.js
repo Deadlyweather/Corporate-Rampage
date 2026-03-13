@@ -1,6 +1,6 @@
 import { isGameOver, Startup, keys, Debug, Stats } from './config.js';
 import { DownloadImages } from './assets.js';
-import { UpdateWorld, Shoot, canShoot } from './engine.js';
+import { UpdateWorld, Shoot, canShoot, canSwing } from './engine.js';
 import { RenderGame, ShowUI, DrawDebugMode } from './renderer.js';
 import { walls } from './world.js';
 import { GenerateFloor } from './level.js';
@@ -15,6 +15,8 @@ document.addEventListener("contextmenu", (e) => {
 
 // Efektimuuttuja aseen välähdykselle (viedään exportilla rendererille)
 export let muzzleFlash = 0;
+
+export let progress = 0
 
 // 1. ALUSTUS
 canvas.width = window.innerWidth;
@@ -38,11 +40,20 @@ window.addEventListener("mousemove", (e) => {
 });
 
 window.addEventListener("mousedown", (e) => {
+
     // Estetään ampuminen jos peli on loppu tai ollaan latausruudussa
-    if (!isGameOver && Startup.Progress === 100) {
-        Shoot();
-        muzzleFlash = 5; // Suuliekki näkyy 5 framea
+    if (isGameOver || Startup.Progress !== 100) return;
+
+    if (e.button === 0) {  // Left click = Ranged
+        Shoot("Bullet");
+        muzzleFlash = 5; 
     }
+
+    if (e.button === 2) {  // Right click = Melee
+        Shoot("Slash");
+        progress = 1000
+    }
+
 });
 
 // 3. PELISILMUKKA (Game Loop)
@@ -67,7 +78,7 @@ function gameLoop() {
     // A) LOGIIKAN PÄIVITYS
     UpdateWorld(walls); 
     if (muzzleFlash > 0) muzzleFlash--; // Vähennetään suuliekin kestoa
-
+    if (progress > 0) progress--
     // B) RENDERÖINTI (Piirtäminen)
     RenderGame(ctx);     // Piirtää maailman, viholliset ja pelaajan
     ShowUI(ctx);         // Piirtää HUDin (elämät, rahat, boss-palkki)

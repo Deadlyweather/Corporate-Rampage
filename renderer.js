@@ -3,7 +3,7 @@ import { Debug, Stats, UI } from './config.js';
 import { images, createPlaceholder } from './assets.js';
 import { walls } from './world.js';
 import { enemies, projectiles, enemyProjectiles, particles, hasKeycard } from './engine.js';
-import { muzzleFlash } from './main.js';
+import { muzzleFlash, progress } from './main.js';
 
 // --- PÄÄPIIRTOFUNKTIOT ---
 
@@ -11,6 +11,7 @@ import { muzzleFlash } from './main.js';
  * Piirtää koko pelimaailman kameranäkymän sisällä
  */
 export function RenderGame(ctx) {
+    
     // 1. Ruudun tyhjennys
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillStyle = "black";
@@ -118,6 +119,23 @@ function drawPlayerAndGun(ctx) {
         ctx.fill();
     }
     ctx.restore();
+    ctx.restore();
+}
+
+function drawBat(ctx, swingProgress = 0) {
+    ctx.save();
+    ctx.translate(Debug.Player.world.x, Debug.Player.world.y);
+
+    let startAngle = 0 + swingProgress;     // kaaren alku 0 rad
+    let endAngle = startAngle + Math.PI;    // 180 astetta
+
+    ctx.fillStyle = "rgba(255, 0, 0, 0.6)";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, 25, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.restore();
 }
 

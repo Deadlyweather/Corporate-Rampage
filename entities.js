@@ -1,6 +1,7 @@
 // entities.js - Luokat pelin dynaamisille olioille
 import { enemyProjectiles } from './engine.js';
 import { images } from './assets.js';
+import { Debug } from './config.js';
 
 export class Enemy {
     constructor(x, y, type) {
@@ -122,15 +123,30 @@ export class Projectile {
         this.y = y;
         this.angle = angle;
         this.type = type;
-        this.speed = 10;
-        this.size = 8;
-        this.alive = true;
-        this.damage = 25;
+
+        // oletusasetukset tyypin mukaan
+        if (type === "Bullet") {
+            this.speed = 10;
+            this.size = 8;
+            this.damage = 25;
+            this.arc = Math.PI * 2
+            
+        } else if (type === "Slash") {
+            this.speed = 0
+            this.size = 80
+            this.damage = 50
+            this.arc = Math.PI
+            this.progress = 0
+        }
+
+        this.alive = true; // onko projectile olemassa
     }
 
     update(walls) {
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
+        if (this.type === "Bullet") {
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+        }
 
         walls.forEach(wall => {
             if (this.x > wall.x && this.x < wall.x + wall.w &&
@@ -139,19 +155,21 @@ export class Projectile {
             }
         });
     }
-
-    // if (type = "Bullet") {
-        
-    // }
-
-    // if (type = "Slash") {
-        
-    // }
-
     draw(ctx) {
-        ctx.fillStyle = "yellow";
+        ctx.fillStyle = this.type === "Bullet" ? "yellow" : "orange"
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+
+        if (this.type === "Bullet") {
+            ctx.arc(this.x, this.y, this.size, 0, this.arc)
+        } else if (this.type === "Slash") {
+        // Slash pysyy pelaajan ympärillä
+        this.x = Debug.Player.world.x
+        this.y = Debug.Player.world.y
+
+        this.progress += this.speed;
+        if (this.progress > Math.PI) this.alive = false
+    }
+        
         ctx.fill();
     }
 }
