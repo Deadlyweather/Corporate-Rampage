@@ -35,55 +35,75 @@ export function GenerateFloor(clearEnemies = true) {
     walls.push(new Wall(-size/2, -size/2, wallThick, size)); // Vasen
     walls.push(new Wall(size/2 - wallThick, -size/2, wallThick, size)); // Oikea
 
-     // 3. HUONEIDEN GENEROINTI (Päivitetty satunnaisilla kooilla)
+     // 3. HUONEIDEN GENEROINTI (Korjattu ovilogiikka)
     if (Stats.Floor === 0 || Stats.Floor % 10 !== 0) {
-        const gridSize = 3; 
-        const margin = 200; 
-        const innerSize = size - (margin * 2); 
-        const cellSize = innerSize / gridSize;
-        const gap = 150; 
+    const gridSize = 3; 
+    const cellSize = size / gridSize;
+    const gap = 120;
+    const doorGap = 100;
 
-        for (let row = 0; row < gridSize; row++) {
-            for (let col = 0; col < gridSize; col++) {
-                let xStart = -size/2 + margin + (col * cellSize);
-                let yStart = -size/2 + margin + (row * cellSize);
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            let xStart = -size/2 + (col * cellSize);
+            let yStart = -size/2 + (row * cellSize);
 
-                let cx = xStart + cellSize/2;
-                let cy = yStart + cellSize/2;
+            let cx = xStart + cellSize/2;
+            let cy = yStart + cellSize/2;
+            if (Math.abs(cx) < 300 && Math.abs(cy) < 300) continue;
 
-                if (Math.abs(cx) < 300 && Math.abs(cy) < 300) continue;
+            let x = (col === 0) ? xStart : xStart + (gap / 2);
+            let w = (col === 0 || col === gridSize - 1) ? cellSize - (gap / 2) : cellSize - gap;
+            let y = (row === 0) ? yStart : yStart + (gap / 2);
+            let h = (row === 0 || row === gridSize - 1) ? cellSize - (gap / 2) : cellSize - gap;
 
-                // TÄMÄ KOHTA: Määritellään uudet koot
-                let randomW = (cellSize - gap) * (0.8 + Math.random() * 0.2);
-                let randomH = (cellSize - gap) * (0.8 + Math.random() * 0.2);
-                let x = xStart + (cellSize - randomW) / 2;
-                let y = yStart + (cellSize - randomH) / 2;
+            // --- OVILOGIIKKA ---
+            // Listataan vain ne seinät, jotka EIVÄT ole ulkoreunoja
+            let possibleDoors = [];
+            if (row > 0) possibleDoors.push(0);            // Yläseinä (jos ei yläreunassa)
+            if (row < gridSize - 1) possibleDoors.push(1); // Alaseinä (jos ei alareunassa)
+            if (col > 0) possibleDoors.push(2);            // Vasen seinä (jos ei vasemmassa reunassa)
+            if (col < gridSize - 1) possibleDoors.push(3); // Oikea seinä (jos ei oikeassa reunassa)
 
-                const doorGap = 100;
-                // Arvotaan 2 ovea
-                let doors = [0, 1, 2, 3].sort(() => Math.random() - 0.5).slice(0, 2);
+            // Valitaan vähintään yksi ovi näistä mahdollisista suunnista
+            let selectedDoors = possibleDoors.sort(() => Math.random() - 0.5).slice(0, 2);
+            if (selectedDoors.length === 0 && possibleDoors.length > 0) {
+                selectedDoors.push(possibleDoors[0]); // Varmistus: vähintään yksi ovi
+            }
 
-                // HUOM: Käytä tässä randomW ja randomH muuttujia!
-                // Yläseinä
-                if (doors.includes(0)) {
-                    walls.push(new Wall(x, y, randomW/2 - doorGap/2, wallThick));
-                    walls.push(new Wall(x + randomW/2 + doorGap/2, y, randomW/2 - doorGap/2, wallThick));
-                } else { walls.push(new Wall(x, y, randomW, wallThick)); }
+            // YLÄSEINÄ
+            if (row > 0) {
+                if (selectedDoors.includes(0)) {
+                    walls.push(new Wall(x, y, w/2 - doorGap/2, wallThick));
+                    walls.push(new Wall(x + w/2 + doorGap/2, y, w/2 - doorGap/2, wallThick));
+                } else { walls.push(new Wall(x, y, w, wallThick)); }
+            }
 
-                // Alaseinä
-                if (doors.includes(1)) {
-                    walls.push(new Wall(x, y + randomH - wallThick, randomW/2 - doorGap/2, wallThick));
-                    walls.push(new Wall(x + randomW/2 + doorGap/2, y + randomH - wallThick, randomW/2 - doorGap/2, wallThick));
-                } else { walls.push(new Wall(x, y + randomH - wallThick, randomW, wallThick)); }
+            // ALASEINÄ
+            if (row < gridSize - 1) {
+                if (selectedDoors.includes(1)) {
+                    walls.push(new Wall(x, y + h - wallThick, w/2 - doorGap/2, wallThick));
+                    walls.push(new Wall(x + w/2 + doorGap/2, y + h - wallThick, w/2 - doorGap/2, wallThick));
+                } else { walls.push(new Wall(x, y + h - wallThick, w, wallThick)); }
+            }
 
-                // Vasen seinä
-                walls.push(new Wall(x, y, wallThick, randomH));
-                // Oikea seinä
-                walls.push(new Wall(x + randomW - wallThick, y, wallThick, randomH));
+            // VASEN SEINÄ
+            if (col > 0) {
+                if (selectedDoors.includes(2)) {
+                    walls.push(new Wall(x, y, wallThick, h/2 - doorGap/2));
+                    walls.push(new Wall(x, y + h/2 + doorGap/2, wallThick, h/2 - doorGap/2));
+                } else { walls.push(new Wall(x, y, wallThick, h)); }
+            }
+
+            // OIKEA SEINÄ
+            if (col < gridSize - 1) {
+                if (selectedDoors.includes(3)) {
+                    walls.push(new Wall(x + w - wallThick, y, wallThick, h/2 - doorGap/2));
+                    walls.push(new Wall(x + w - wallThick, y + h/2 + doorGap/2, wallThick, h/2 - doorGap/2));
+                } else { walls.push(new Wall(x + w - wallThick, y, wallThick, h)); }
             }
         }
     }
-
+}
 
     // 4. UUDET VIHОLLISET JA KEYCARD
     if (Stats.Floor > 0 && Stats.Floor % 10 === 0) {

@@ -4,7 +4,12 @@ import { UpdateWorld, Shoot, canShoot, canSwing } from './engine.js';
 import { RenderGame, ShowUI, DrawDebugMode } from './renderer.js';
 import { walls } from './world.js';
 import { GenerateFloor } from './level.js';
+import { music } from "./assets.js";
 
+document.addEventListener("click", () => {
+    music.play();
+    console.log("music started");
+}, { once: true });
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
