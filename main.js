@@ -16,7 +16,7 @@ document.addEventListener("contextmenu", (e) => {
 // Efektimuuttuja aseen välähdykselle (viedään exportilla rendererille)
 export let muzzleFlash = 0;
 
-export let progress = 0
+export let SwingFlash = 0
 
 // 1. ALUSTUS
 canvas.width = window.innerWidth;
@@ -51,7 +51,7 @@ window.addEventListener("mousedown", (e) => {
 
     if (e.button === 2) {  // Right click = Melee
         Shoot("Slash");
-        progress = 1000
+        SwingFlash = 5
     }
 
 });
@@ -78,7 +78,7 @@ function gameLoop() {
     // A) LOGIIKAN PÄIVITYS
     UpdateWorld(walls); 
     if (muzzleFlash > 0) muzzleFlash--; // Vähennetään suuliekin kestoa
-    if (progress > 0) progress--
+    if (SwingFlash > 0) SwingFlash--
     // B) RENDERÖINTI (Piirtäminen)
     RenderGame(ctx);     // Piirtää maailman, viholliset ja pelaajan
     ShowUI(ctx);         // Piirtää HUDin (elämät, rahat, boss-palkki)

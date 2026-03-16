@@ -12,7 +12,7 @@ export let enemies = [];
 export let canShoot = true;
 export let canSwing = true;
 export let shootDelay = 200;
-export let swingDuration = 1000;
+export let swingDuration = 600;
 export let hasKeycard = false;
 
 /**

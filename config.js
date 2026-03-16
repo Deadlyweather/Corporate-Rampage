@@ -11,9 +11,9 @@ export let Stats = {
 };
 
 export let attributes = {
-    STR: 10, // Vahvuus (1 STR = 10% melee Dmg + 1% knockback (100 cap) + 1 max hp)
-    END: 0, // Kestävyys (1 END = 1 damage reduction + 0.1% damage reduction (80 cap) + 1% knockback reduction (90 cap))
-    AGI: 10, // Nopeus (1 AGI = 10% speed + 0.1 cooldown reduction)
+    STR: 0, // Vahvuus (1 STR = 1% melee Dmg + 1% knockback (100% cap) + 1 max hp)
+    END: 0, // Kestävyys (1 END = 1 damage reduction + 0.1% damage reduction (80% cap) + 1% knockback reduction (90% cap))
+    AGI: 0, // Nopeus (1 AGI = 1% movement speed + 1% attack speed + 1% attack cooldown reduction)
     VIT: 0, // Elinvoimaisuus (1 VIT = 0.1 regeneration + 1% injury resistance)
     /*
     Pelaaja haavoittuneena eli alle 50% hp saa injury effektin joka voimistuu 1 stack per prosentti alle 50% hp
@@ -28,7 +28,8 @@ export let Debug = {
     Player: {
         size: 64,
         world: { x: 0, y: 0 },
-        screen: { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+        screen: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+        veloicity: { x: 0, y: 0 }
     },
     Camera: {
         world: { x: 0, y: 0 },

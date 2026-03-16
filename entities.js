@@ -7,6 +7,7 @@ export class Enemy {
     constructor(x, y, type) {
         this.x = x;
         this.y = y;
+        this.veloicity = { x: 0, y: 0 }
         this.type = type;
         this.health = 100;
         this.speed = 2;
@@ -133,16 +134,20 @@ export class Projectile {
             
         } else if (type === "Slash") {
             this.speed = 0
-            this.size = 80
+            this.size = 100
             this.damage = 50
-            this.arc = Math.PI
-            this.progress = 0
-        }
 
+            this.arc = Math.PI
+            this.duration = 30
+            this.progress = this.duration
+
+            this.baseAngle = angle
+        }
         this.alive = true; // onko projectile olemassa
     }
-
+    
     update(walls) {
+        
         if (this.type === "Bullet") {
             this.x += Math.cos(this.angle) * this.speed;
             this.y += Math.sin(this.angle) * this.speed;
@@ -155,22 +160,40 @@ export class Projectile {
             }
         });
     }
+        
     draw(ctx) {
-        ctx.fillStyle = this.type === "Bullet" ? "yellow" : "orange"
-        ctx.beginPath();
+        ctx.save()
 
         if (this.type === "Bullet") {
+            ctx.fillStyle = "yellow"
+            ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, this.arc)
+            ctx.fill();
         } else if (this.type === "Slash") {
-        // Slash pysyy pelaajan ympärillä
-        this.x = Debug.Player.world.x
-        this.y = Debug.Player.world.y
+            ctx.save()
 
-        this.progress += this.speed;
-        if (this.progress > Math.PI) this.alive = false
-    }
+            this.progress--
+
+            if (this.progress <= 0) {
+                this.alive = false
+            }
+
+            // animaation vaihe
+            let t = 1 - (this.progress / this.duration)
+
+            let start = this.baseAngle - this.arc / 2
+            let end = this.baseAngle + this.arc / 2
+
+            this.angle = start + (end - start) * t
+
+            ctx.translate(Debug.Player.world.x, Debug.Player.world.y)
+            ctx.rotate(this.angle)
+            ctx.drawImage(images["BatSword"], 0, -this.size, this.size, this.size)
+            ctx.restore()
+        }
         
-        ctx.fill();
+        
+        ctx.restore()
     }
 }
 

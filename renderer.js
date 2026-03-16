@@ -3,7 +3,7 @@ import { Debug, Stats, UI } from './config.js';
 import { images, createPlaceholder } from './assets.js';
 import { walls } from './world.js';
 import { enemies, projectiles, enemyProjectiles, particles, hasKeycard } from './engine.js';
-import { muzzleFlash, progress } from './main.js';
+import { muzzleFlash, SwingFlash } from './main.js';
 
 // --- PÄÄPIIRTOFUNKTIOT ---
 
@@ -74,6 +74,8 @@ export function RenderGame(ctx) {
     projectiles.forEach(p => p.draw(ctx));
     enemyProjectiles.forEach(ep => ep.draw(ctx));
     enemies.forEach(e => e.draw(ctx));
+
+
     
     drawPlayerAndGun(ctx);
 
@@ -122,19 +124,11 @@ function drawPlayerAndGun(ctx) {
     ctx.restore();
 }
 
-function drawBat(ctx, swingProgress = 0) {
+function drawBat(ctx) {
     ctx.save();
     ctx.translate(Debug.Player.world.x, Debug.Player.world.y);
 
-    let startAngle = 0 + swingProgress;     // kaaren alku 0 rad
-    let endAngle = startAngle + Math.PI;    // 180 astetta
-
     ctx.fillStyle = "rgba(255, 0, 0, 0.6)";
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, 25, startAngle, endAngle);
-    ctx.closePath();
-    ctx.fill();
 
     ctx.restore();
 }
