@@ -1,7 +1,7 @@
 // entities.js - Luokat pelin dynaamisille olioille
 import { enemyProjectiles } from './engine.js';
 import { images } from './assets.js';
-import { Debug } from './config.js';
+import { Debug, attributes } from './config.js';
 
 export class Enemy {
     constructor(x, y, type) {
@@ -134,8 +134,8 @@ export class Projectile {
             
         } else if (type === "Slash") {
             this.speed = 0
-            this.size = 100
-            this.damage = 50
+            this.size = 100 * (1 + (Math.min(attributes.STR * 0.01, 8)))
+            this.damage = 25 * (1 + (attributes.STR * 0.1))
 
             this.arc = Math.PI
             this.duration = 30

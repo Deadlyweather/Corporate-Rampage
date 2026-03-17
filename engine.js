@@ -1,4 +1,4 @@
-import { Debug, keys, Stats, setGameOver } from './config.js';
+import { Debug, keys, Stats, setGameOver, attributes } from './config.js';
 import { Enemy, Projectile, EnemyProjectile } from './entities.js';
 import { GenerateFloor } from './level.js';
 
@@ -12,7 +12,7 @@ export let enemies = [];
 export let canShoot = true;
 export let canSwing = true;
 export let shootDelay = 200;
-export let swingDuration = 600;
+export let swingDuration = 1000;
 export let hasKeycard = false;
 
 /**
@@ -44,12 +44,12 @@ export function Shoot(type) {
 
     if (type === "Bullet") {
         canShoot = false;
-        setTimeout(() => canShoot = true, shootDelay);
+        setTimeout(() => canShoot = true, shootDelay / attributes.AGI * 0.01);
     }
 
     if (type === "Slash") {
         canSwing = false;
-        setTimeout(() => canSwing = true, swingDuration);
+        setTimeout(() => canSwing = true, swingDuration / attributes.AGI * 0.01);
     }
 }
 
@@ -57,7 +57,7 @@ export function Shoot(type) {
  * Liikuttaa pelaajaa ja tarkistaa seinätörmäykset
  */
 export function UpdatePlayer(walls) {
-    let speed = 5;
+    let speed = 5 + (Math.min(attributes.AGI * 0.01, 5));
     let nextX = Debug.Player.world.x;
     let nextY = Debug.Player.world.y;
 
